@@ -1,0 +1,39 @@
+{
+    "_base": ["/home/pupa/PycharmProjects/LightRotateDet/config/rretinanet/models/rretinanet.json",
+              "/home/pupa/PycharmProjects/LightRotateDet/config/rretinanet/models/rretinanet_yolov5_backbone.json"],
+    "log_level": "INFO",
+    "network_type": "rotate_detection",
+    "dataset": {
+            "type":  "MSRATD500",
+            "data_root": "/home/pupa/PycharmProjects/LightRotateDet/data/msratd500",
+            "pipeline": [{"type": "Collect", "keys": ["img", "gt_bboxes", "gt_labels"]}],
+            "train_file": "txt_train.txt",
+            "val_file": "txt_val.txt"
+              },
+    "dataloader":{
+            "samples_per_gpu": 2,
+            "workers_per_gpu": 2
+    },
+    "workflow": [["train", 2], ["val", 1]],
+    "total_epochs": 100,
+    "log_iter": 10,
+    "optimizer": "ADAMW",
+    "learning_rate": 5e-5,
+     "weight_decay": 1e-4,
+    "lr_scheduler": {"type": "CosineAnnealingWarmRestarts",
+                     "args": {"T_0": 5}
+                      },
+    "clip_gradients": {
+                    "type": "value",
+                    "enabled": true,
+                    "clip_value": 1.0,
+                    "norm_type": 2.0
+    },
+    "backbone_multiplier": 1.0,
+    "input_channel": 3,
+     "input_width": 448,
+     "input_height": 448,
+     "save_train_metrics_log": true,
+     "save_train_predict_fn": true,
+  "checkpoint_dir": "/home/pupa/PycharmProjects/LightRotateDet/outputs"
+}
