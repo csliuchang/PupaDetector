@@ -11,7 +11,6 @@ import cv2
 import os
 
 
-
 class Train(BaseRunner):
     def __init__(self, *args, **kwargs):
         super(Train, self).__init__(*args, **kwargs)
@@ -21,6 +20,7 @@ class Train(BaseRunner):
         self.model.train()
         epoch_start = time.time()
         batch_start = time.time()
+        logger_batch = 0
         lr = self.optimizer.param_groups[0]['lr']
         for count, data in enumerate(self.train_dataloader):
             if count >= len(self.train_dataloader):
@@ -31,6 +31,7 @@ class Train(BaseRunner):
 
             _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
             batch = _img.shape[0]
+            logger_batch += batch
             self.optimizer.zero_grad()
             # if True:
             #     filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
@@ -49,9 +50,10 @@ class Train(BaseRunner):
             all_losses.append(losses)
             if self.global_step % self.log_iter == 0:
                 batch_time = time.time() - batch_start
-                self.logger.info('[%d/%d], [%d/%d], training step: %d, running loss: %f, time: %d ms' % (
-                    epoch, self.epochs, (count+1)*batch, len(self.train_dataloader.dataset), self.global_step, np.array(all_losses).mean(), batch_time * 1000))
-                batch_start = time.time()
+                self.logger.info(
+                    'epochs=>[%d/%d], pers=>[%d/%d], training step: %d, running loss: %f, time/pers: %d ms' % (
+                        epoch, self.epochs, (count + 1) * batch, len(self.train_dataloader.dataset), self.global_step,
+                        np.array(all_losses).mean(), (batch_time * 1000) / logger_batch))
             if self.save_train_metrics_log:
                 pass
             if self.save_train_predict_fn:
@@ -103,7 +105,7 @@ class Train(BaseRunner):
             for k, v in self.metrics.items():
                 best_str += '{}: {:.6f}, '.format(k, v)
         self.logger.info(best_str)
-        self.logger.info('--'*10 + f'finish {results["epoch"]} epoch training.' + '--'*10)
+        self.logger.info('--' * 10 + f'finish {results["epoch"]} epoch training.' + '--' * 10)
 
     def _eval(self, epoch):
         self.model.eval()
@@ -122,18 +124,17 @@ class Train(BaseRunner):
             total_time += (time.time() - start_time)
             for i in range(cur_batch):
                 predict_gt_collection = combine_predicts_gt(predicts[i], data['images_collect']['img_metas'][i],
-                                                            [ground_truth[key][i] for key in ground_truth])
+                                                            ground_truth[i])
                 final_collection.append(predict_gt_collection)
         if self.save_val_pred:
             self.save_val_prediction(final_collection)
         metric = self.eval_method(final_collection, self.num_classes)
-        self.logger.info('%2f FPS' % (total_frame/total_time))
+        self.logger.info('%2f FPS' % (total_frame / total_time))
         return metric
-
 
     def save_val_prediction(self, final_collections):
         pre_save_dir = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                         f'{self.time_str}/predicts'
+                       f'{self.time_str}/predicts'
         if self.network_type == 'segmentation':
             for final_collection in final_collections:
                 predictions = final_collection['predicts']
@@ -153,11 +154,10 @@ class Train(BaseRunner):
                 image_path = osp.join(self.data_root, 'images', img_file)
                 ori_img = cv2.imread(image_path, 0)
                 predict_labels = np.expand_dims(predict_labels, axis=-1)
-                merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels*255, 0.5, 0)
+                merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels * 255, 0.5, 0)
                 cv2.imwrite(filepath, merge_img)
         else:
             pass
 
     def _after_train(self):
         self.logger.info('all train epoch is finished')
-

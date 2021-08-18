@@ -67,6 +67,7 @@ class BaseRunner:
             if self.distributed:
                 pass
             ret_results = self._train_epoch(epoch)
+            self.draw_lr(ret_results)
             if epoch % self.val_iter == 0:
                 self._after_epoch(ret_results)
         self._after_train()
@@ -95,3 +96,6 @@ class BaseRunner:
         assert all([k not in module_args for k in kwargs]), 'Overwriting kwargs given in config file is not allowed'
         module_args.update(kwargs)
         return getattr(module, module_name)(*args, **module_args)
+
+    def draw_lr(self, results):
+        lr = results['lr']

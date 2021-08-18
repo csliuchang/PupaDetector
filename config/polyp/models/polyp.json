@@ -2,19 +2,18 @@
     "model": {
         "type": "EncoderDecoder",
         "backbone": {
-            "type": "STDCNet813",
-            "use_conv_last": true
+            "type": "pvt_v2_b2"
         },
         "decode_head": {
-            "type": "STDCHead",
+            "type": "PolypHead",
             "in_channels": [3, 256, 512],
+            "channels": 32,
             "head_width": 64,
             "num_classes": 1,
             "loss": {"type": "OhemCELoss",
                     "thresh":  0.7,
                     "n_min": 65536
-            },
-            "bound_loss": {"type": "DetailAggregateLoss"}
+            }
         }
     },
     "train_cfg": {},

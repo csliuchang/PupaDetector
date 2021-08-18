@@ -1,6 +1,6 @@
 {
     "_base": "/home/pupa/PycharmProjects/PupaDetector/config/polyp/models/polyp.json",
-    "pretrained": "/home/pupa/pretained/STDCNet813M_73.91.tar",
+    "pretrained": "/home/pupa/pretained/yolov5s_backbone.pth",
     "model": {
         "backbone": {
             "type": "yolov5_backbone",

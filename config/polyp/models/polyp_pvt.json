@@ -1,10 +1,9 @@
 {
-    "_base": "/home/pupa/PycharmProjects/PupaDetector/config/stdcnet/models/polyp.json",
-    "pretrained": "/home/pupa/pretained/STDCNet813M_73.91.tar",
+    "_base": "/home/pupa/PycharmProjects/PupaDetector/config/polyp/models/polyp.json",
+    "pretrained": "",
     "model": {
         "backbone": {
-            "type": "STDCNet813",
-            "use_conv_last": true
+            "type": "pvt_v2_b2"
         }
     }
 }

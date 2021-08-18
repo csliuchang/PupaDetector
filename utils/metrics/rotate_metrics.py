@@ -3,7 +3,7 @@ from shapely.geometry import Polygon
 
 def combine_predicts_gt(predicts, metas, gt, network_type='segmentation'):
     if network_type == 'segmentation':
-        return dict(img_metas=metas, predicts=predicts, gt_masks=gt[0])
+        return dict(img_metas=metas, predicts=predicts, gt_masks=gt)
     else:
         bboxes, scores = predicts[:, :8], predicts[:, 8]
         gt_bboxes, gt_labels, gt_masks = gt[0], gt[1], gt[2]

@@ -23,6 +23,7 @@ class yolov5_backbone(nn.Module):
                  width_multiple=1,
                  use_spp=True,
                  num_classes=None,
+                 pretrained='',
                  **kwargs
                  ):
         super(yolov5_backbone, self).__init__()
@@ -70,9 +71,9 @@ class yolov5_backbone(nn.Module):
 
             input_channels = output_channels
 
-        self.initialize_weights()
+        self.init_weights(pretrained=pretrained)
 
-    def initialize_weights(self):
+    def init_weights(self, pretrained=''):
         for m in self.modules():
             t = type(m)
             if t is nn.Conv2d:
