@@ -1,4 +1,4 @@
-from models.base.backbone.pvt import pvt_v2_b0
+from models.base.backbone.stdc import STDCNet813
 import torch
 import time
 
@@ -7,7 +7,7 @@ import time
 
 if __name__ == "__main__":
     a = torch.randn(1, 3, 512, 512).cuda()
-    backbone = pvt_v2_b0().cuda()
+    backbone = STDCNet813(3, (512, 512)).cuda()
     start = time.time()
     out = backbone(a)
     end = time.time()-start
