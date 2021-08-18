@@ -1,0 +1,9 @@
+{
+    "_base": "/home/pupa/PycharmProjects/PupaDetector/config/polyp/models/polyp.json",
+    "pretrained": "",
+    "model": {
+        "backbone": {
+            "type": "pvt_v2_b2"
+        }
+    }
+}
