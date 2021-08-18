@@ -17,7 +17,6 @@ class Train(BaseRunner):
         super(Train, self).__init__(*args, **kwargs)
 
     def _train_epoch(self, epoch):
-        self.logger = get_root_logger(log_level='INFO')
         all_losses = []
         self.model.train()
         epoch_start = time.time()
@@ -104,14 +103,15 @@ class Train(BaseRunner):
             for k, v in self.metrics.items():
                 best_str += '{}: {:.6f}, '.format(k, v)
         self.logger.info(best_str)
-        self.logger.info('finish training.')
+        self.logger.info('--'*10 + f'finish {results["epoch"]} epoch training.' + '--'*10)
 
     def _eval(self, epoch):
         self.model.eval()
         final_collection = []
         total_frame = 0.0
         total_time = 0.0
-        for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader), desc='test model'):
+        for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
+                            desc='begin val mode'):
             with torch.no_grad():
                 tensor_to_device(data, self.device)
             start_time = time.time()
@@ -157,4 +157,7 @@ class Train(BaseRunner):
                 cv2.imwrite(filepath, merge_img)
         else:
             pass
+
+    def _after_train(self):
+        self.logger.info('all train epoch is finished')
 

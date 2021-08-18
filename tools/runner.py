@@ -4,6 +4,7 @@ import torch
 from datasets.builder import build_dataset, build_dataloader
 from engine.optimizer import build_optimizer
 from utils.metrics import RotateDetEval, SegEval
+from utils import get_root_logger
 from tqdm import tqdm
 
 
@@ -18,6 +19,7 @@ class BaseRunner:
         self.log_iter = cfg.log_iter
         self.network_type = cfg.network_type
         self.val_iter = 1
+        self.logger = get_root_logger()
         # set device
         torch.manual_seed(meta['seed'])  # set seed for cpu
         if torch.cuda.device_count() > 0 and torch.cuda.is_available():
@@ -65,7 +67,6 @@ class BaseRunner:
             if self.distributed:
                 pass
             ret_results = self._train_epoch(epoch)
-            print('-' * 15 + f"Finish {ret_results['epoch']} epoch training" + '-' * 15)
             if epoch % self.val_iter == 0:
                 self._after_epoch(ret_results)
         self._after_train()

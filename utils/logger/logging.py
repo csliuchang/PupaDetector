@@ -1,7 +1,13 @@
 import logging
 from termcolor import colored
 import torch.distributed as dist
+import os
+import atexit
+import functools
+import sys
+from iopath.common.file_io import PathManager as PathManagerBase
 
+PathManager = PathManagerBase()
 logger_initialized = {}
 
 VERBOSE_LOG_FORMAT = ('%(asctime)s | %(levelname)s | pid-%(process)d | '
@@ -42,67 +48,64 @@ class _ColorfulFormatter(logging.Formatter):
 VERBOSE_LEVELS = [logging.DEBUG, logging.WARNING, logging.ERROR, logging.CRITICAL]
 
 
-def get_logger(name, log_file=None, log_level=logging.INFO, file_mode='w'):
-    """Initialize and get a logger by name.
-
-    If the logger has not been initialized, this method will initialize the
-    logger by adding one or two handlers, otherwise the initialized logger will
-    be directly returned. During initialization, a StreamHandler will always be
-    added. If `log_file` is specified and the process rank is 0, a FileHandler
-    will also be added.
+@functools.lru_cache()
+def get_logger(
+    output=None, distributed_rank=0, *, color=True, name="pupadetector", abbrev_name=None
+):
+    """
+    Initialize the detectron2 logger and set its verbosity level to "DEBUG".
 
     Args:
-        name (str): Logger name.
-        log_file (str | None): The log filename. If specified, a FileHandler
-            will be added to the logger.
-        log_level (int): The logger level. Note that only the process of
-            rank 0 is affected, and other processes will set the level to
-            "Error" thus be silent most of the time.
-        file_mode (str): The file mode used in opening log file.
-            Defaults to 'w'.
+        output (str): a file name or a directory to save log. If None, will not save log file.
+            If ends with ".txt" or ".log", assumed to be a file name.
+            Otherwise, logs will be saved to `output/log.txt`.
+        name (str): the root module name of this logger
+        abbrev_name (str): an abbreviation of the module, to avoid long names in logs.
+            Set to "" to not log the root module in logs.
+            By default, will abbreviate "detectron2" to "d2" and leave other
+            modules unchanged.
 
     Returns:
-        logging.Logger: The expected logger.
+        logging.Logger: a logger
     """
     logger = logging.getLogger(name)
-    if name in logger_initialized:
-        return logger
-    # handle hierarchical names
-    # e.g., logger "a" is initialized, then logger "a.b" will skip the
-    # initialization since it is a child of "a".
-    for logger_name in logger_initialized:
-        if name.startswith(logger_name):
-            return logger
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
 
-    stream_handler = logging.StreamHandler()
-    handlers = [stream_handler]
+    if abbrev_name is None:
+        abbrev_name = "d2" if name == "detectron2" else name
 
-    if dist.is_available() and dist.is_initialized():
-        rank = dist.get_rank()
-    else:
-        rank = 0
+    plain_formatter = logging.Formatter(
+        "[%(asctime)s] %(name)s %(levelname)s: %(message)s", datefmt="%m/%d %H:%M:%S"
+    )
+    # stdout logging: master only
+    if distributed_rank == 0:
+        ch = logging.StreamHandler(stream=sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        if color:
+            formatter = _ColorfulFormatter(
+                colored("[%(asctime)s %(filename)s]: ", "green") + "%(message)s",
+                datefmt="%m/%d %H:%M:%S",
+            )
+        else:
+            formatter = plain_formatter
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
-    # only rank 0 will add a FileHandler
-    if rank == 0 and log_file is not None:
-        # Here, the default behaviour of the official logger is 'a'. Thus, we
-        # provide an interface to change the file mode to the default
-        # behaviour.
-        file_handler = logging.FileHandler(log_file, file_mode)
-        handlers.append(file_handler)
+    # file logging: all workers
+    if output is not None:
+        if output.endswith(".txt") or output.endswith(".log"):
+            filename = output
+        else:
+            filename = os.path.join(output, "log.txt")
+        if distributed_rank > 0:
+            filename = filename + ".rank{}".format(distributed_rank)
+        PathManager.mkdirs(os.path.dirname(filename))
 
-    formatter = _ColorfulFormatter(colored("[%(asctime)s %(filename)s]: ", "green") + "%(message)s",
-                                   datefmt="%m/%d %H:%M:%S")
-    for handler in handlers:
-        handler.setFormatter(formatter)
-        handler.setLevel(log_level)
-        logger.addHandler(handler)
-
-    if rank == 0:
-        logger.setLevel(log_level)
-    else:
-        logger.setLevel(logging.ERROR)
-
-    logger_initialized[name] = True
+        fh = logging.StreamHandler(_cached_log_stream(filename))
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(plain_formatter)
+        logger.addHandler(fh)
 
     return logger
 
@@ -138,7 +141,13 @@ def print_log(msg, logger=None, level=logging.INFO):
             f'"silent" or None, but got {type(logger)}')
 
 
+def _cached_log_stream(filename):
+    io = PathManager.open(filename, "a")
+    atexit.register(io.close)
+    return io
+
+
 def get_root_logger(log_file=None, log_level=logging.INFO):
-    logger = get_logger(name='lightradet', log_file=log_file, log_level=log_level)
+    logger = get_logger(log_file)
 
     return logger
