@@ -105,5 +105,5 @@ def collate(batch, samples_per_gpu=1):
         ground_truth = dict(gt_bboxes=gt_bboxes, gt_labels=gt_labels, gt_masks=gt_masks)
     else:
         gt_masks = torch.stack(gt_masks, dim=0)
-        ground_truth = gt_masks
+        ground_truth = dict(gt_masks=gt_masks)
     return dict(images_collect=images_collect, ground_truth=ground_truth)

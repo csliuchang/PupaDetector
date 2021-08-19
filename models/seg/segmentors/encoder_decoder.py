@@ -140,7 +140,7 @@ class EncoderDecoder(BaseSegmentor):
         dict[str, Tensor]
             a dictionary of loss components
         """
-
+        ground_truth = ground_truth['gt_masks']
         x = self.extract_feat(inputs)
 
         losses = dict()

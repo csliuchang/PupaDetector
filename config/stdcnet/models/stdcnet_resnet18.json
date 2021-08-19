@@ -1,6 +1,6 @@
 {
     "_base": "/home/pupa/PycharmProjects/PupaDetector/config/stdcnet/models/stdcnet.json",
-    "pretrained": "/home/pupa/pretained/STDCNet813M_73.91.tar",
+    "pretrained": "/home/pupa/pretained/ResNet18_v1b.pth",
     "model": {
         "type": "EncoderDecoder",
         "backbone": {

@@ -107,6 +107,7 @@ class Train(BaseRunner):
         self.logger.info(best_str)
         self.logger.info('--' * 10 + f'finish {results["epoch"]} epoch training.' + '--' * 10)
 
+    @torch.no_grad()
     def _eval(self, epoch):
         self.model.eval()
         final_collection = []
@@ -114,18 +115,16 @@ class Train(BaseRunner):
         total_time = 0.0
         for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
                             desc='begin val mode'):
-            with torch.no_grad():
-                tensor_to_device(data, self.device)
+            tensor_to_device(data, self.device)
             start_time = time.time()
             _img, ground_truth = data['images_collect']['img'], data['ground_truth']
             cur_batch = _img.shape[0]
             total_frame += cur_batch
             predicts = self.model(_img)
             total_time += (time.time() - start_time)
-            for i in range(cur_batch):
-                predict_gt_collection = combine_predicts_gt(predicts[i], data['images_collect']['img_metas'][i],
-                                                            ground_truth[i])
-                final_collection.append(predict_gt_collection)
+            predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
+                                                        ground_truth)
+            final_collection.append(predict_gt_collection)
         if self.save_val_pred:
             self.save_val_prediction(final_collection)
         metric = self.eval_method(final_collection, self.num_classes)
