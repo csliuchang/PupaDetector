@@ -33,13 +33,13 @@ class Train(BaseRunner):
             batch = _img.shape[0]
             logger_batch += batch
             self.optimizer.zero_grad()
-            # if True:
-            #     filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-            #              f'{self.time_str}/mask'
-            #     filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
-            #     mkdir_or_exist(osp.dirname(filepath))
-            #     mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
-            #     cv2.imwrite(filepath, mask * 255)
+            if True:
+                filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
+                         f'{self.time_str}/mask'
+                filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
+                mkdir_or_exist(osp.dirname(filepath))
+                mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
+                cv2.imwrite(filepath, mask)
             losses = self.model(_img, ground_truth=_ground_truth, return_metrics=True)
             losses = losses["loss"]
             losses.backward()

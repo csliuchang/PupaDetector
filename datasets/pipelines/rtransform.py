@@ -25,6 +25,7 @@ def to_tensor(data):
 
 
 def normalize(img, mean=None, std=None):
+    mean, std = torch.tensor(mean), torch.tensor(std)
     if mean is None or std is None:
         return img
     return (img - mean)/std
@@ -39,7 +40,7 @@ class RResize(object):
 
     def __init__(self, img_scale):
         self.scale = img_scale
-        self.resize_height, self.resize_width = self.scale
+        self.resize_height, self.resize_width = self                                                                                                                                        .scale
 
     def _resize_img(self, results):
         image = results['img_info']
@@ -152,10 +153,11 @@ def polyline2masks(results, bg_id=0):
     """
     default background id is 0
     """
-    image_shape = getattr(results, 'image_shape', results['ori_image_shape'])
+    image_shape = results.get('image_shape', 'ori_image_shape')
     mask = np.ones(shape=image_shape, dtype=np.uint8) * bg_id
     for label_id, polyline in zip(results['ann_info']['labels'], results['polylines']):
-        color = int(label_id + 1)
+        # color = int(label_id + 1)
+        color = int(label_id)
         cv2.fillPoly(mask, np.array([polyline], np.int32), color=color, lineType=cv2.LINE_4)
 
     return to_tensor(np.array(mask, dtype=np.int64))

@@ -7,7 +7,6 @@ class SegEval(object):
         self.ignore_label = ignore_label
 
     def __call__(self, collections, n_classes):
-        n_classes = n_classes + 1
         hist = torch.zeros(n_classes, n_classes).cuda().detach()
         for collection in collections:
             logits = collection['predicts']
