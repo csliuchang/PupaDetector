@@ -110,12 +110,14 @@ class Collect(object):
 
     def __init__(self,
                  keys,
+                 bg_first,
                  meta_keys=('filename', 'ori_image_shape', 'image_shape'),
                  fields=(dict(key='img', stack=True), dict(key='gt_bboxes'),
                          dict(key='gt_labels'))):
         self.fields = fields
         self.keys = keys
         self.meta_keys = meta_keys
+        self.bg_first = bg_first
 
 
     def __call__(self, results):
@@ -135,7 +137,7 @@ class Collect(object):
             results['gt_masks'] = np.ones(shape=results['image_shape'], dtype=np.uint8) * 0.
         elif 'polygons' in results:
             if 'masks' in self.keys:
-                results['masks'] = polyline2masks(results)
+                results['masks'] = polyline2masks(results, self.bg_first)
         for key in self.meta_keys:
             img_meta[key] = results.get(key, None)
         data['img_metas'] = img_meta
@@ -148,15 +150,17 @@ class Collect(object):
                f'(keys={self.keys}, meta_keys={self.meta_keys})'
 
 
-def polyline2masks(results, bg_id=255):
+def polyline2masks(results, bg_id=255, bg_first=False):
     """
     default background id is 0
     """
+    if bg_first:
+        bg_id = 0
     image_shape = results.get('image_shape', 'ori_image_shape')
     mask = np.ones(shape=image_shape, dtype=np.uint8) * bg_id
     for label_id, polyline in zip(results['ann_info']['labels'], results['polygons']):
         # color = int(label_id + 1)
-        color = int(label_id)
+        color = int(label_id + 1) if bg_first else int(label_id)
         cv2.fillPoly(mask, np.array([polyline], np.int32), color=color, lineType=cv2.LINE_4)
 
     return to_tensor(np.array(mask, dtype=np.int64))

@@ -106,6 +106,8 @@ def main():
     if network_type in ['rotate_detector', 'detector']:
         model = build_detector(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     else:
+        cfg.model.decode_head.num_classes = cfg.num_classes
+        cfg.dataset.train_pipeline
         model = build_segmentor(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     model_str = model_info(model)
     logger.info(model_str)
