@@ -133,8 +133,7 @@ class Collect(object):
         if 'bboxes' in results['ann_info']:
             results['gt_bboxes'] = np.array(results['ann_info']['bboxes'], dtype=np.float32)
             results['gt_masks'] = np.ones(shape=results['image_shape'], dtype=np.uint8) * 0.
-        elif 'polylines' in results['ann_info']:
-            results['polylines'] = results['ann_info']['polylines']
+        elif 'polygons' in results:
             if 'masks' in self.keys:
                 results['masks'] = polyline2masks(results)
         for key in self.meta_keys:
@@ -155,7 +154,7 @@ def polyline2masks(results, bg_id=0):
     """
     image_shape = results.get('image_shape', 'ori_image_shape')
     mask = np.ones(shape=image_shape, dtype=np.uint8) * bg_id
-    for label_id, polyline in zip(results['ann_info']['labels'], results['polylines']):
+    for label_id, polyline in zip(results['ann_info']['labels'], results['polygons']):
         # color = int(label_id + 1)
         color = int(label_id)
         cv2.fillPoly(mask, np.array([polyline], np.int32), color=color, lineType=cv2.LINE_4)

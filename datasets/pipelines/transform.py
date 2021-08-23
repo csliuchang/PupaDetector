@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
-
 from ..builder import PIPELINES
-from engine.parallel import DataContainer as DC
-import torch
 
 
 
@@ -44,8 +41,7 @@ class Resize(object):
             new_polylines = []
             for polyline in results["ann_info"]["polylines"]:
                 new_polylines.append([[poly[0] * width_ratio, poly[1] * height_ratio] for poly in polyline])
-                print('resize is readly')
-            results['ann_info']['polylines'] = new_polylines
+            results['polygons'] = new_polylines
 
     def __call__(self, results):
         self._resize_img(results)
