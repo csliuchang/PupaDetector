@@ -148,7 +148,7 @@ class Collect(object):
                f'(keys={self.keys}, meta_keys={self.meta_keys})'
 
 
-def polyline2masks(results, bg_id=0):
+def polyline2masks(results, bg_id=255):
     """
     default background id is 0
     """

@@ -1,5 +1,5 @@
 {
-    "_base": "/home/pupa/PycharmProjects/PupaDetector/config/stdcnet/models/stdcnet.json",
+    "_base": "./config/stdcnet/models/stdcnet.json",
     "pretrained": "/home/pupa/pretained/ResNet18_v1b.pth",
     "model": {
         "type": "EncoderDecoder",
@@ -19,7 +19,7 @@
             "sp8_in_channels": 128,
             "sp16_in_channels": 512,
             "head_width": 64,
-            "num_classes": 19,
+            "num_classes": 1,
             "loss": {"type": "OhemCELoss",
                     "thresh":  0.7,
                     "n_min": 65536

@@ -178,7 +178,7 @@ class Config:
         cfg_text = filename + '\n'
 
         if BASE_KEY in cfg_dict:
-            cfg_dir = osp.dirname(filename)
+            # cfg_dir = osp.dirname(filename)
             base_filename = cfg_dict.pop(BASE_KEY)
             base_filename = base_filename if isinstance(
                 base_filename, list) else [base_filename]
@@ -186,7 +186,7 @@ class Config:
             cfg_dict_list = list()
             cfg_text_list = list()
             for f in base_filename:
-                _cfg_dict, _cfg_text = Config._json2dict(osp.join(cfg_dir, f))
+                _cfg_dict, _cfg_text = Config._json2dict(f)
                 cfg_dict_list.append(_cfg_dict)
                 cfg_text_list.append(_cfg_text)
 

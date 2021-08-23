@@ -21,7 +21,7 @@ def parse_args():
         '--deterministic',
         action='store_true',
         help='whether to set deterministic options for CUDNN backend.')
-    parser.add_argument('--config', default='./config/stdcnet/train_dla_hci.json', help='train config file path')
+    parser.add_argument('--config', default='./config/stdcnet/train_bisenet_citystcapes.json', help='train config file path')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--work-dir', help='the dir to save logs and models')

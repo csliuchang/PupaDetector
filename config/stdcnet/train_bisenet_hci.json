@@ -6,8 +6,10 @@
     "dataset": {
             "type":  "SegDataset",
             "data_root": "/home/pupa/PycharmProjects/PupaDetector/data/hci_cls1",
-            "train_pipeline": [{"type": "Collect", "keys": ["img", "masks"]}],
-            "val_pipeline": [{"type": "Collect", "keys": ["img", "masks"]}],
+            "train_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
+                                {"type": "Collect", "keys": ["img", "masks"]}],
+            "val_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
+                              {"type": "Collect", "keys": ["img", "masks"]}],
             "train_file": "labelme_train.txt",
             "val_file": "labelme_val.txt"
               },
