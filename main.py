@@ -21,7 +21,7 @@ def parse_args():
         '--deterministic',
         action='store_true',
         help='whether to set deterministic options for CUDNN backend.')
-    parser.add_argument('--config', default='./config/stdcnet/train_bisenet_citystcapes.json', help='train config file path')
+    parser.add_argument('--config', default='./config/ocrnet/train_ocrnet_citystcapes.json', help='train config file path')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
@@ -106,8 +106,13 @@ def main():
     if network_type in ['rotate_detector', 'detector']:
         model = build_detector(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     else:
-        cfg.model.decode_head.num_classes = cfg.num_classes
-        cfg.dataset.train_pipeline
+        if isinstance(cfg.model.decode_head, dict):
+            cfg.model.decode_head.num_classes = cfg.num_classes
+        elif isinstance(cfg.model.decode_head, list):
+            for i in range(len(cfg.model.decode_head)):
+                cfg.model.decode_head[i].num_classes = cfg.num_classes
+        else:
+            raise TypeError("decoder must be a dict or list")
         model = build_segmentor(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     model_str = model_info(model)
     logger.info(model_str)

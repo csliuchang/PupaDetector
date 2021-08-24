@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..conv_module import ConvModule
-from ..plugin import PLUGIN_LAYERS
 
 
 # @PLUGIN_LAYERS.register_module()

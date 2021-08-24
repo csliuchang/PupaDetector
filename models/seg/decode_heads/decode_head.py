@@ -177,7 +177,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         """Placeholder of forward function."""
         pass
 
-    def forward_train(self, inputs, gt_semantic_seg, **kwargs):
+    def forward_train(self, inputs, gt_semantic_seg, return_val=False, **kwargs):
         """Forward function for training.
 
         Parameters
@@ -187,6 +187,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         gt_semantic_seg : Tensor
             Semantic segmentation masks
             used if the architecture supports semantic segmentation task.
+        return_val: Bool
 
         Returns
         -------
@@ -195,6 +196,8 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         """
         seg_logits = self.forward(inputs)
         losses = self.losses(seg_logits, gt_semantic_seg)
+        if return_val:
+            return losses, seg_logits
         return losses
 
     def forward_infer(self, inputs, **kwargs):

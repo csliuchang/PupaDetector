@@ -1,8 +1,8 @@
 from .activation import build_activation_layer
 from .block import build_block_layer
 from .conv import build_conv_layer
-from .conv_module import ConvModule, DepthwiseSeparableConvModule
-from .norm import build_norm_layer, _BatchNorm, update_bn_stats
+from models.base.blocks.conv_module import ConvModule, DepthwiseSeparableConvModule
+from .norm import build_norm_layer, _BatchNorm
 from .padding import build_padding_layer
 from .plugin import build_plugin_layer
 from .registry import (ACTIVATION_LAYERS, BLOCK_LAYERS, CONV_LAYERS,

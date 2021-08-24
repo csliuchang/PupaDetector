@@ -1,8 +1,7 @@
-import torch
 import math
 import torch.nn as nn
 from models.base.blocks import Focus, C3, SPP
-from models.base.conv_module import ConvModule
+from models.base.blocks.conv_module import ConvModule
 from models.builder import BACKBONES
 
 

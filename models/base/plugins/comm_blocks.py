@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from ..conv_module import ConvModule
+from models.base.blocks.conv_module import ConvModule
 from deepcv.pytorch_networks.base.cnn.components.plugins.corrd_attention import CoordAttention
 
 

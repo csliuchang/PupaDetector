@@ -1,4 +1,4 @@
-from ..conv_module import ConvModule
+from models.base.blocks.conv_module import ConvModule
 from ..registry import BLOCK_LAYERS
 import torch.nn as nn
 import torch

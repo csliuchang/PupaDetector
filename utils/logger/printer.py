@@ -4,7 +4,7 @@ from copy import deepcopy
 
 
 
-def model_info(model, verbose=False, img_size=448):
+def model_info(model, verbose=False, img_size=480):
     # Model information. img_size may be int or list, i.e. img_size=640 or img_size=[640, 320]
     n_p = sum(x.numel() for x in model.parameters())  # number parameters
     n_g = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients

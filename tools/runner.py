@@ -52,7 +52,12 @@ class BaseRunner:
         self.save_val_pred = cfg.save_val_pred
         self.min_score_threshold = 0.4
         if self.network_type == 'segmentation':
-            self.num_classes = cfg.model.decode_head.num_classes
+            if isinstance(cfg.model.decode_head, dict):
+                self.num_classes = cfg.model.decode_head.num_classes
+            elif isinstance(cfg.model.decode_head, list):
+                self.num_classes = cfg.model.decode_head[0].num_classes
+            else:
+                raise TypeError('not support decode head type =')
             self.eval_method = SegEval()
             self.metrics = {'miou': 0.}
         else:
