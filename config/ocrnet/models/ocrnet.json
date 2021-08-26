@@ -44,7 +44,10 @@
             "final_drop": -1,
             "norm_cfg": {"type": "BN", "requires_grad": true},
             "align_corners": false,
-            "loss": {"type": "CrossEntropyLoss", "use_sigmoid": false, "loss_weight": 0.4}},
+                        "loss": {"type": "OhemCELoss",
+                    "thresh":  0.3,
+                    "n_min": 65536
+            }},
           {
             "type": "OCRHead",
             "in_channels": [18, 36, 72, 144],
@@ -55,7 +58,10 @@
             "final_drop": -1,
             "norm_cfg": {"type": "BN", "requires_grad": true},
             "align_corners": false,
-            "loss": {"type": "CrossEntropyLoss", "use_sigmoid": false, "loss_weight": 1.0}}
+            "loss": {"type": "OhemCELoss",
+                    "thresh":  0.7,
+                    "n_min": 65536
+            }}
         ]},
     "train_cfg": {},
     "test_cfg": {"mode": "whole"}

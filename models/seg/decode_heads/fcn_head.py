@@ -5,6 +5,9 @@ from models.base.blocks.conv_module import ConvModule
 
 from ...builder import HEADS
 from .decode_head import BaseDecodeHead
+from ...builder import build_loss
+
+from ...utils import resize
 
 
 @HEADS.register_module()
@@ -22,6 +25,7 @@ class FCNHead(BaseDecodeHead):
     """
 
     def __init__(self,
+                 loss,
                  num_convs=2,
                  kernel_size=3,
                  concat_input=True,
@@ -71,6 +75,7 @@ class FCNHead(BaseDecodeHead):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg)
+        self.loss = build_loss(loss)
 
     def forward(self, inputs):
         """Forward function."""
@@ -80,3 +85,15 @@ class FCNHead(BaseDecodeHead):
             output = self.conv_cat(torch.cat([x, output], dim=1))
         output = self.cls_seg(output)
         return output
+
+
+    def losses(self, seg_logit, seg_label):
+        loss = dict()
+        seg_logit = resize(
+            input=seg_logit,
+            size=seg_label.shape[1:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        loss_1 = self.loss(seg_logit, seg_label)
+        loss["loss"] = loss_1
+        return loss

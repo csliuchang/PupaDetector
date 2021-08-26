@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from models.base.blocks.conv_module import ConvModule
 from models.base.blocks.self_attention_block import SelfAttentionBlock as _SelfAttentionBlock
 from ...utils import resize
+from ...builder import build_loss
 
 
 class SpatialGatherModule(nn.Module):
@@ -93,7 +94,7 @@ class OCRHead(BaseCascadeDecodeHead):
             Default: 1.
     """
 
-    def __init__(self, ocr_channels, scale=1, **kwargs):
+    def __init__(self, ocr_channels, loss, scale=1, **kwargs):
         super(OCRHead, self).__init__(**kwargs)
         self.ocr_channels = ocr_channels
         self.scale = scale
@@ -105,6 +106,8 @@ class OCRHead(BaseCascadeDecodeHead):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
         self.spatial_gather_module = SpatialGatherModule(self.scale)
+
+        self.loss = build_loss(loss)
 
         self.bottleneck = ConvModule(
             self.in_channels,
@@ -124,4 +127,15 @@ class OCRHead(BaseCascadeDecodeHead):
         output = self.cls_seg(object_context)
 
         return output
+
+    def losses(self, seg_logit, seg_label):
+        loss = dict()
+        seg_logit = resize(
+            input=seg_logit,
+            size=seg_label.shape[1:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        loss_1 = self.loss(seg_logit, seg_label)
+        loss["loss"] = loss_1
+        return loss
 
