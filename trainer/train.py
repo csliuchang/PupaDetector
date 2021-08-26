@@ -9,6 +9,7 @@ from tqdm import tqdm
 from utils.metrics.rotate_metrics import combine_predicts_gt
 import cv2
 import os
+from utils.visual import get_cam_on_image
 
 
 class Train(BaseRunner):
@@ -26,20 +27,23 @@ class Train(BaseRunner):
             if count >= len(self.train_dataloader):
                 break
             self.global_step += 1
-
-            tensor_to_device(data, self.device)
-
             _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
+            _img = _img.cuda()
+            for key, value in _ground_truth.items():
+                if value is not None:
+                    if isinstance(value, torch.Tensor):
+                        _ground_truth[key] = value.cuda()
             batch = _img.shape[0]
             logger_batch += batch
             self.optimizer.zero_grad()
-            if True:
-                filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                         f'{self.time_str}/mask'
-                filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
-                mkdir_or_exist(osp.dirname(filepath))
-                mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
-                cv2.imwrite(filepath, mask)
+            # if True:
+            #     filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
+            #              f'{self.time_str}/mask'
+            #     filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
+            #     mkdir_or_exist(osp.dirname(filepath))
+            #     mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
+            #     cv2.imwrite(filepath, mask*255)
+
             losses = self.model(_img, ground_truth=_ground_truth, return_metrics=True)
             losses = losses["loss"]
             losses.backward()
@@ -115,18 +119,24 @@ class Train(BaseRunner):
         total_time = 0.0
         for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
                             desc='begin val mode'):
-            tensor_to_device(data, self.device)
             start_time = time.time()
-            _img, ground_truth = data['images_collect']['img'], data['ground_truth']
+            _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
+            _img = _img.cuda()
+            for key, value in _ground_truth.items():
+                if value is not None:
+                    if isinstance(value, torch.Tensor):
+                        _ground_truth[key] = value.cuda()
             cur_batch = _img.shape[0]
             total_frame += cur_batch
             predicts = self.model(_img)
             total_time += (time.time() - start_time)
             predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
-                                                        ground_truth)
+                                                        _ground_truth)
             final_collection.append(predict_gt_collection)
         if self.save_val_pred:
             self.save_val_prediction(final_collection)
+        if self.ge_heat_map:
+            self.generate_heat_map(final_collection)
         metric = self.eval_method(final_collection, self.num_classes)
         self.logger.info('%2f FPS' % (total_frame / total_time))
         return metric
@@ -157,6 +167,21 @@ class Train(BaseRunner):
                 cv2.imwrite(filepath, merge_img)
         else:
             pass
+
+    def generate_heat_map(self, final_collections):
+        pre_save_dir = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
+                       f'{self.time_str}/heatmaps'
+        if self.network_type == 'segmentation':
+            for final_collection in final_collections:
+                predictions = final_collection['predicts']
+                filename = final_collection['img_metas']['filename']
+                image_path = osp.join(self.data_root, 'images', filename)
+                filepath = os.path.join(pre_save_dir, 'cam_' + filename)
+                mkdir_or_exist(osp.dirname(filepath))
+                img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+                cam = get_cam_on_image(predictions, img)
+                cv2.imwrite(filepath, cam)
+
 
     def _after_train(self):
         self.logger.info('all train epoch is finished')

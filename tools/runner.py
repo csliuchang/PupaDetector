@@ -5,7 +5,7 @@ from datasets.builder import build_dataset, build_dataloader
 from engine.optimizer import build_optimizer
 from utils.metrics import RotateDetEval, SegEval
 from utils import get_root_logger
-from tqdm import tqdm
+import torch.nn as nn
 
 
 class BaseRunner:
@@ -21,24 +21,23 @@ class BaseRunner:
         self.val_iter = 1
         self.logger = get_root_logger()
         # set device
-        torch.manual_seed(meta['seed'])  # set seed for cpu
-        if torch.cuda.device_count() > 0 and torch.cuda.is_available():
-            self.with_cuda = True
-            self.device = torch.device("cuda")
-            torch.cuda.manual_seed(meta['seed'])
-            torch.cuda.manual_seed_all(meta['seed'])
         if len(datasets) == 2:
             train_dataset, val_dataset = datasets
         else:
             train_dataset = datasets
             val_dataset = None
-        self.model = model.to(self.device)
+        model = model.cuda()
+        self.model = nn.parallel.DistributedDataParallel(model,
+                                                         device_ids=[cfg.local_rank, ],
+                                                         output_device=cfg.local_rank,
+                                                         find_unused_parameters=True
+                                                         )
         self.data_root = cfg.dataset.data_root
         # get datasets dataloader
         self.train_dataloader = build_dataloader(train_dataset, cfg.dataloader.samples_per_gpu,
                                                  cfg.dataloader.workers_per_gpu,
-                                                 len(cfg.gpu_ids), dist=distributed, seed=cfg.seed)
-        self.val_dataloader = build_dataloader(val_dataset, 1, cfg.dataloader.workers_per_gpu, len(cfg.gpu_ids),
+                                                 len([cfg.local_rank, ]), dist=distributed, seed=cfg.seed)
+        self.val_dataloader = build_dataloader(val_dataset, 1, cfg.dataloader.workers_per_gpu, len([cfg.local_rank, ]),
                                                dist=distributed,
                                                seed=cfg.seed
                                                )
@@ -51,6 +50,7 @@ class BaseRunner:
         self.checkpoint_dir = cfg.checkpoint_dir
         self.save_val_pred = cfg.save_val_pred
         self.min_score_threshold = 0.4
+        self.ge_heat_map = False
         if self.network_type == 'segmentation':
             if isinstance(cfg.model.decode_head, dict):
                 self.num_classes = cfg.model.decode_head.num_classes

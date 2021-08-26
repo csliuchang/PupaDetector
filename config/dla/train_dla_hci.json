@@ -6,8 +6,10 @@
     "dataset": {
             "type":  "SegDataset",
             "data_root": "/home/pupa/PycharmProjects/PupaDetector/data/hci_cls1",
-            "train_pipeline": [{"type": "Collect", "keys": ["img", "masks"]}],
-            "val_pipeline": [{"type": "Collect", "keys": ["img", "masks"]}],
+            "train_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
+                               {"type": "Collect", "keys": ["img", "masks"], "bg_first": true}],
+            "val_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
+                              {"type": "Collect", "keys": ["img", "masks"], "bg_first": true}],
             "train_file": "labelme_train.txt",
             "val_file": "labelme_val.txt"
               },
@@ -17,9 +19,10 @@
     },
     "workflow": [["train", 2], ["val", 1]],
     "total_epochs": 100,
+    "num_classes": 1,
     "log_iter": 10,
     "optimizer": "ADAMW",
-    "learning_rate": 5e-5,
+    "learning_rate": 1e-3,
      "weight_decay": 1e-4,
     "lr_scheduler": {"type": "CosineAnnealingWarmRestarts",
                      "args": {"T_0": 5,
@@ -37,7 +40,7 @@
      "input_height": 448,
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
-  "save_val_pred": true,
+  "save_val_pred": false,
   "checkpoint_dir": "/home/pupa/PycharmProjects/PupaDetector/outputs"
 
 }

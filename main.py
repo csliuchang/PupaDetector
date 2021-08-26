@@ -1,5 +1,6 @@
 import argparse
 from utils import Config, get_root_logger, model_info
+from utils.dist_utils import _find_free_port
 import os
 from models import build_detector, build_segmentor
 from trainer.train import Train
@@ -12,27 +13,20 @@ import logging
 import os.path as osp
 import copy
 from utils import load_checkpoint
+import torch.distributed as dist
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('--seed', type=int, default=2, help='random seed')
-    parser.add_argument(
-        '--deterministic',
-        action='store_true',
-        help='whether to set deterministic options for CUDNN backend.')
-    parser.add_argument('--config', default='./config/ocrnet/train_ocrnet_citystcapes.json', help='train config file path')
+    parser.add_argument('--config', default='./config/dla/train_dla_citystcapes.json', help='train config file path')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     group_gpus = parser.add_mutually_exclusive_group()
     group_gpus.add_argument(
-        '--gpus',
-        type=int,
-        help='number of gpus to use '
-        '(only applicable to non-distributed training)')
-    group_gpus.add_argument(
-        '--gpu-ids',
+        '--local_rank',
+        default=0,
         type=int,
         nargs='+',
         help='ids of gpus to use '
@@ -40,24 +34,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-def set_random_seed(seed, deterministic=False):
-    """Set random seed.
-
-    Args:
-        seed (int): Seed to be used.
-        deterministic (bool): Whether to set the deterministic option for
-            CUDNN backend, i.e., set `torch.backends.cudnn.deterministic`
-            to True and `torch.backends.cudnn.benchmark` to False.
-            Default: False.
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    if deterministic:
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
 
 def main():
@@ -77,20 +53,25 @@ def main():
                                 osp.splitext(osp.basename(args.config))[0])
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    if args.gpu_ids is not None:
-        cfg.gpu_ids = args.gpu_ids
+    if args.local_rank is not None:
+        cfg.local_rank = args.local_rank
     else:
-        cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
+        cfg.local_rank = range(1) if args.gpus is None else range(args.gpus)
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     # set random seeds
     meta = dict()
-    if args.seed is not None:
-        logger.info(f'Set random seed to {args.seed}, '
-                    f'deterministic: {args.deterministic}')
-        set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta['seed'] = args.seed
     meta['time_str'] = timestamp
+    # cuda set
+    torch.cuda.set_device(args.local_rank)
+    port = _find_free_port()
+    dist.init_process_group(
+        backend='nccl',
+        init_method="tcp://127.0.0.1:33274",
+        world_size=torch.cuda.device_count(),
+        rank=args.local_rank
+    )
     # build_dataset
     cfg.dataset.update({"stage": "train"})
     datasets = [build_dataset(cfg.dataset)]

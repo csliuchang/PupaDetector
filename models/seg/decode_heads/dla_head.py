@@ -4,6 +4,8 @@ import torch.nn as nn
 import numpy as np
 from ...base import ConvModule, resize
 from ...builder import HEADS, build_loss
+from .decode_head import BaseDecodeHead
+import torch.nn.functional as F
 
 
 def fill_up_weights(up):
@@ -109,52 +111,33 @@ class DLAUP(nn.Module):
 
 
 @HEADS.register_module()
-class DLAHead(nn.Module):
+class DLAHead(BaseDecodeHead):
 
-    def __init__(self, num_classes,
-                 in_channels=[16, 32, 128, 256, 512, 1024],
+    def __init__(self,
+                 loss,
                  down_ratio=2,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='ReLU', inplace=True),
-                 loss=dict(
-                     type='CrossEntropyLoss',
-                     use_sigmoid=False,
-                     loss_weight=1.0),
-                 ignore_label=None,
-                 align_corners=False,
                  **kwargs):
-        super(DLAHead, self).__init__()
+        super(DLAHead, self).__init__(**kwargs)
 
         assert down_ratio in [2, 4, 8, 16]
-        self.loss = build_loss(loss)
-        self.ignore_label = ignore_label
-        self.align_corners = align_corners
-        num_classes = num_classes + 1
-        self.num_classes = num_classes
 
-        scales = [2 ** i for i in range(len(in_channels))]
-        self.dla_up = DLAUP(in_channels, scales=scales,
-                            norm_cfg=norm_cfg,
-                            act_cfg=act_cfg
+        scales = [2 ** i for i in range(len(self.in_channels))]
+        self.dla_up = DLAUP(self.in_channels, scales=scales,
+                            norm_cfg=self.norm_cfg,
+                            act_cfg=self.act_cfg
                             )
-        self.fc = nn.Sequential(
-            nn.Conv2d(in_channels[0], num_classes, kernel_size=1,
-                      stride=1, padding=0, bias=True))
-        up_factor = 2
-        up = nn.ConvTranspose2d(num_classes, num_classes, up_factor * 2,
-                                stride=up_factor, padding=up_factor // 2,
-                                output_padding=0, groups=num_classes,
-                                bias=False)
-        fill_up_weights(up)
-        up.weight.requires_grad = False
-        self.up = up
+        self.fc = nn.Conv2d(self.in_channels[0], self.num_classes, kernel_size=(1, 1),
+                            stride=(1, 1), padding=(0, 0), bias=True)
+
+        self.loss = build_loss(loss)
 
         self.init_weights()
 
     def forward(self, x):
         x = self.dla_up(x)
         x = self.fc(x)
-        return self.up(x)
+        x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        return x
 
     def init_weights(self):
         for m in self.fc.modules():
@@ -166,53 +149,7 @@ class DLAHead(nn.Module):
                 m.bias.data.zero_()
 
     def losses(self, seg_logit, seg_label):
-        """Compute segmentation loss."""
         loss = dict()
-        seg_label = seg_label.squeeze(1)
-        input_size = seg_label.shape[1:]
-        seg_logit = resize(input=seg_logit,
-                           size=input_size,
-                           mode='bilinear',
-                           align_corners=self.align_corners)
-
-        loss_seg = self.loss(seg_logit,
-                             seg_label,
-                             weight=None,
-                             ignore_label=self.ignore_label)
-        loss['loss_seg'] = loss_seg
+        loss_1 = self.loss(seg_logit, seg_label)
+        loss["loss"] = loss_1
         return loss
-
-    def forward_train(self, inputs, gt_semantic_seg, **kwargs):
-        """Forward function for training.
-
-        Parameters
-        ----------
-        inputs : list[Tensor]
-            List of multi-level img features.
-        gt_semantic_seg : Tensor
-            Semantic segmentation masks
-            used if the architecture supports semantic segmentation task.
-
-        Returns
-        -------
-        dict[str, Tensor]
-            a dictionary of loss components
-        """
-        seg_logits = self.forward(inputs)
-        losses = self.losses(seg_logits, gt_semantic_seg)
-        return losses
-
-    def forward_infer(self, inputs, **kwargs):
-        """Forward function for testing.
-
-        Parameters
-        ----------
-        inputs : list[Tensor]
-            List of multi-level img features.
-
-        Returns
-        -------
-        Tensor
-            Output segmentation map.
-        """
-        return self.forward(inputs)

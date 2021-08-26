@@ -7,11 +7,14 @@
             "type":  "CityStcapes",
             "data_root": "./data/citystcapes",
             "train_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
-                               {"type": "Collect", "keys": ["img", "masks"], "bg_first": true}],
+                               {"type": "Collect", "keys": ["img", "masks"], "bg_first": false}],
             "val_pipeline": [{"type": "Resize", "img_scale": [448, 448]},
-                              {"type": "Collect", "keys": ["img", "masks"], "bg_first": true}],
+                              {"type": "Collect", "keys": ["img", "masks"], "bg_first": false}],
             "train_file": "labelme_train.txt",
-            "val_file": "labelme_val.txt"
+            "val_file": "labelme_val.txt",
+            "auto_norm": false,
+            "mean": [66.83241271972656, 76.1273193359375, 64.33003997802734],
+            "std": [35.666778564453125, 37.674537658691406, 35.559261322021484]
               },
     "dataloader":{
             "samples_per_gpu": 8,

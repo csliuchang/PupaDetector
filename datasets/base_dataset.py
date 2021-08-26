@@ -15,7 +15,7 @@ class BaseDataset(Dataset):
     A _base datasets for rotate detection
     """
 
-    def __init__(self, data_root, train_pipeline, val_pipeline, train_file=None, val_file=None, test_mode=False, stage='train'):
+    def __init__(self, data_root, train_pipeline, val_pipeline, auto_norm=True, mean=None, std=None, train_file=None, val_file=None, test_mode=False, stage='train'):
         self.stage = stage
         self.img_ids = None
         self.test_mode = test_mode
@@ -27,7 +27,10 @@ class BaseDataset(Dataset):
         else:
             self.ann_file = os.path.join(data_root, 'txt_test.txt')
         self.data_infos = self.load_annotations(self.ann_file)
-        self.mean, self.std = self._compute_mean_std(self.data_infos)
+        if auto_norm:
+            self.mean, self.std = self._compute_mean_std(self.data_infos)
+        else:
+            self.mean, self.std = mean, std
         self.load_train_pipeline = Compose(train_pipeline)
         self.load_val_pipeline = Compose(val_pipeline)
         if not self.test_mode:
