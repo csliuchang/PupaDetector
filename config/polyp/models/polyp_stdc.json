@@ -5,6 +5,15 @@
         "backbone": {
             "type": "STDCNet813",
             "use_conv_last": true
+        },
+        "decode_head": {
+            "type": "PolypHead",
+            "in_channels": [
+                64,
+                256,
+                512,
+                1024
+            ]
         }
     }
 }

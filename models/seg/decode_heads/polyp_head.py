@@ -8,24 +8,23 @@ import math
 
 @HEADS.register_module()
 class PolypHead(BaseDecodeHead):
-    def __init__(self, channels, loss, **kwargs):
-        super(PolypHead, self).__init__(**kwargs)
-        self.Translayer2_0 = BasicConv2d(64, channels, 1)
-        self.Translayer2_1 = BasicConv2d(128, channels, 1)
-        self.Translayer3_1 = BasicConv2d(256, channels, 1)
-        self.Translayer4_1 = BasicConv2d(512, channels, 1)
+    def __init__(self, in_channels, head_width, loss, loss_2, **kwargs):
+        super(PolypHead, self).__init__(in_channels, head_width, **kwargs)
+        self.Translayer2_0 = BasicConv2d(in_channels[0], head_width, 1)
+        self.Translayer2_1 = BasicConv2d(in_channels[1], head_width, 1)
+        self.Translayer3_1 = BasicConv2d(in_channels[2], head_width, 1)
+        self.Translayer4_1 = BasicConv2d(in_channels[3], head_width, 1)
 
-        self.CFM = CFM(channels)
-        self.ca = ChannelAttention(64)
+        self.CFM = CFM(head_width)
+        self.ca = ChannelAttention(in_channels[0])
         self.sa = SpatialAttention()
         self.SAM = SAM()
 
-        self.down05 = nn.Upsample(scale_factor=0.5, mode='bilinear', align_corners=True)
-        self.out_SAM = nn.Conv2d(channels, self.num_classes, 1)
-        self.out_CFM = nn.Conv2d(channels, self.num_classes, 1)
+        self.out_SAM = nn.Conv2d(head_width, self.num_classes, 1)
+        self.out_CFM = nn.Conv2d(head_width, self.num_classes, 1)
 
         self.loss_1 = build_loss(loss)
-        self.loss_2 = build_loss(loss)
+        self.loss_2 = build_loss(loss_2)
         self.prior_prob = 0.01
         self.init_weights()
 
@@ -53,7 +52,8 @@ class PolypHead(BaseDecodeHead):
 
         # SAM
         T2 = self.Translayer2_0(cim_feature)
-        T2 = self.down05(T2)
+        T2 = F.interpolate(T2, scale_factor=0.5, mode='bilinear', align_corners=True)
+
         sam_feature = self.SAM(cfm_feature, T2)
 
         prediction1 = self.out_CFM(cfm_feature)

@@ -17,7 +17,7 @@
             "std": [35.666778564453125, 37.674537658691406, 35.559261322021484]
               },
     "dataloader":{
-            "samples_per_gpu": 4,
+            "samples_per_gpu": 2,
             "workers_per_gpu": 2
     },
     "workflow": [["train", 2], ["val", 1]],

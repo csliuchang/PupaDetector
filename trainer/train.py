@@ -1,7 +1,7 @@
 import torch
-
+import copy
 from tools import BaseRunner
-from utils import get_root_logger, save_checkpoint, mkdir_or_exist, tensor_to_device
+from utils import save_checkpoint, mkdir_or_exist
 import time
 import numpy as np
 import os.path as osp
@@ -135,15 +135,14 @@ class Train(BaseRunner):
             final_collection.append(predict_gt_collection)
         if self.save_val_pred:
             self.save_val_prediction(final_collection)
-        if self.ge_heat_map:
+        if self.ge_heat_map.enable:
             self.generate_heat_map(final_collection)
         metric = self.eval_method(final_collection, self.num_classes)
         self.logger.info('%2f FPS' % (total_frame / total_time))
         return metric
 
     def save_val_prediction(self, final_collections):
-        pre_save_dir = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                       f'{self.time_str}/predicts'
+        pre_save_dir = self.save_pred_fn_path + '/predicts'
         if self.network_type == 'segmentation':
             for final_collection in final_collections:
                 predictions = final_collection['predicts']
@@ -163,14 +162,14 @@ class Train(BaseRunner):
                 image_path = osp.join(self.data_root, 'images', img_file)
                 ori_img = cv2.imread(image_path, 0)
                 predict_labels = np.expand_dims(predict_labels, axis=-1)
+                predict_labels = cv2.resize(predict_labels, [ori_img.shape[0], ori_img.shape[1]], interpolation=cv2.INTER_LINEAR)
                 merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels * 255, 0.5, 0)
                 cv2.imwrite(filepath, merge_img)
         else:
             pass
 
     def generate_heat_map(self, final_collections):
-        pre_save_dir = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                       f'{self.time_str}/heatmaps'
+        pre_save_dir = self.save_pred_fn_path + '/heatmaps'
         if self.network_type == 'segmentation':
             for final_collection in final_collections:
                 predictions = final_collection['predicts']
@@ -179,7 +178,12 @@ class Train(BaseRunner):
                 filepath = os.path.join(pre_save_dir, 'cam_' + filename)
                 mkdir_or_exist(osp.dirname(filepath))
                 img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-                cam = get_cam_on_image(predictions, img)
+                img = cv2.resize(img, (predictions[1], predictions[2]), cv2.INTER_LINEAR)
+                # predictions = predictions.resize_(predictions.shape[0], img.shape[0], img.shape[1])
+                if self.ge_heat_map.mode == "score_cam":
+                    cam = get_cam_on_image(img, predictions, score_id=13)
+                elif self.ge_heat_map.mode == "grad_cam":
+                    pass
                 cv2.imwrite(filepath, cam)
 
 

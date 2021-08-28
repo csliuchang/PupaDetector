@@ -14,8 +14,8 @@
             "val_file": "labelme_val.txt"
               },
     "dataloader":{
-            "samples_per_gpu": 2,
-            "workers_per_gpu": 0
+            "samples_per_gpu": 8,
+            "workers_per_gpu": 2
     },
     "workflow": [["train", 2], ["val", 1]],
     "total_epochs": 100,
@@ -40,7 +40,7 @@
      "input_height": 448,
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
-  "save_val_pred": false,
+  "save_val_pred": true,
   "checkpoint_dir": "/home/pupa/PycharmProjects/PupaDetector/outputs"
 
 }

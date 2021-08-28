@@ -36,7 +36,8 @@ class BaseRunner:
         # get datasets dataloader
         self.train_dataloader = build_dataloader(train_dataset, cfg.dataloader.samples_per_gpu,
                                                  cfg.dataloader.workers_per_gpu,
-                                                 len([cfg.local_rank, ]), dist=distributed, seed=cfg.seed)
+                                                 len([cfg.local_rank, ]), dist=distributed, seed=cfg.seed,
+                                                 drop_last=True)
         self.val_dataloader = build_dataloader(val_dataset, 1, cfg.dataloader.workers_per_gpu, len([cfg.local_rank, ]),
                                                dist=distributed,
                                                seed=cfg.seed
@@ -48,9 +49,11 @@ class BaseRunner:
         self.save_train_metrics_log = cfg.save_train_metrics_log
         self.save_train_predict_fn = cfg.save_train_predict_fn
         self.checkpoint_dir = cfg.checkpoint_dir
+        self.save_pred_fn_path = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
+                                 f'{self.time_str}'
         self.save_val_pred = cfg.save_val_pred
         self.min_score_threshold = 0.4
-        self.ge_heat_map = False
+        self.ge_heat_map = cfg.ge_heat_map
         if self.network_type == 'segmentation':
             if isinstance(cfg.model.decode_head, dict):
                 self.num_classes = cfg.model.decode_head.num_classes

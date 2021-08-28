@@ -17,7 +17,7 @@
             "std": [35.666778564453125, 37.674537658691406, 35.559261322021484]
               },
     "dataloader":{
-            "samples_per_gpu": 8,
+            "samples_per_gpu": 2,
             "workers_per_gpu": 2
     },
     "workflow": [["train", 2], ["val", 1]],
@@ -43,6 +43,10 @@
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
   "save_val_pred": false,
+  "ge_heat_map": {
+    "enable": true,
+    "mode": "grad_cam"
+  },
   "checkpoint_dir": "/home/pupa/PycharmProjects/PupaDetector/outputs"
 
 }

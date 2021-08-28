@@ -40,7 +40,7 @@ class RResize(object):
 
     def __init__(self, img_scale):
         self.scale = img_scale
-        self.resize_height, self.resize_width = self                                                                                                                                        .scale
+        self.resize_height, self.resize_width = self.scale
 
     def _resize_img(self, results):
         image = results['img_info']

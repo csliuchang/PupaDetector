@@ -12,6 +12,15 @@
             "norm_cfg": "BN2d",
             "act_cfg": "SiLU",
             "num_classes": null
+        },
+                "decode_head": {
+            "type": "PolypHead",
+            "in_channels": [
+                64,
+                128,
+                256,
+                512
+            ]
         }
     }
 }
