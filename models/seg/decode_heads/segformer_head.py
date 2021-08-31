@@ -7,6 +7,7 @@ from ...builder import HEADS
 from .decode_head import BaseDecodeHead
 
 from ...utils import resize
+from models.base.blocks.conv_module import CondConv2D
 
 
 @HEADS.register_module()
@@ -32,19 +33,21 @@ class SegformerHead(BaseDecodeHead):
         self.convs = nn.ModuleList()
         for i in range(num_inputs):
             self.convs.append(
-                ConvModule(
+                CondConv2D(
                     in_channels=self.in_channels[i],
                     out_channels=self.head_width,
-                    kernel_size=1,
+                    kernel_size=3,
                     stride=1,
                     norm_cfg=self.norm_cfg,
                     act_cfg=self.act_cfg))
 
-        self.fusion_conv = ConvModule(
+        self.fusion_conv = CondConv2D(
             in_channels=self.head_width * num_inputs,
             out_channels=self.head_width,
-            kernel_size=1,
+            kernel_size=3,
             norm_cfg=self.norm_cfg)
+
+        self.conv_seg = CondConv2D(self.head_width, self.num_classes, kernel_size=1, act_cfg=None)
 
     def forward(self, inputs):
         # Receive 4 stage backbone feature map: 1/4, 1/8, 1/16, 1/32

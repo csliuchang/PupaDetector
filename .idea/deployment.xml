@@ -7,6 +7,10 @@
           <mappings>
             <mapping deploy="/home/liuchang/PupaDetector" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/outputs" />
+            <excludedPath local="true" path="$PROJECT_DIR$/build" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>

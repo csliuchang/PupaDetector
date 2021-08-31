@@ -10,6 +10,8 @@ from utils.metrics.rotate_metrics import combine_predicts_gt
 import cv2
 import os
 from utils.visual import get_cam_on_image
+import torch.distributed as dist
+
 
 
 class Train(BaseRunner):
@@ -37,8 +39,7 @@ class Train(BaseRunner):
             logger_batch += batch
             self.optimizer.zero_grad()
             # if True:
-            #     filepath = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-            #              f'{self.time_str}/mask'
+            #     filepath = osp.join(self.save_pred_fn_path, 'masks')
             #     filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
             #     mkdir_or_exist(osp.dirname(filepath))
             #     mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
@@ -70,8 +71,7 @@ class Train(BaseRunner):
         self.logger.info('finish %d epoch, train_loss: %f, time: %d ms, lr: %s' % (
             results['epoch'], results['train_loss'],
             results['time'] * 1000, results['lr']))
-        model_save_dir = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                         f'{self.time_str}/checkpoints'
+        model_save_dir = osp.join(self.save_pred_fn_path, 'checkpoints')
         net_save_path_best = osp.join(model_save_dir, 'model_best.pth')
         net_save_path_loss_best = osp.join(model_save_dir, f'model_best_loss.pth')
         assert self.val_dataloader is not None, "no val data in the dataset"
@@ -84,7 +84,8 @@ class Train(BaseRunner):
                 save_checkpoint(self.model, net_save_path_best)
             elif results['train_loss'] <= self.metrics['train_loss']:
                 self.metrics['train_loss'] = results['train_loss']
-                save_checkpoint(self.model, net_save_path_loss_best)
+                if dist.get_rank() == 0:
+                    save_checkpoint(self.model, net_save_path_loss_best)
             else:
                 pass
             best_str = 'current best, '
@@ -119,7 +120,6 @@ class Train(BaseRunner):
         total_time = 0.0
         for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
                             desc='begin val mode'):
-            start_time = time.time()
             _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
             _img = _img.cuda()
             for key, value in _ground_truth.items():
@@ -128,6 +128,7 @@ class Train(BaseRunner):
                         _ground_truth[key] = value.cuda()
             cur_batch = _img.shape[0]
             total_frame += cur_batch
+            start_time = time.time()
             predicts = self.model(_img)
             total_time += (time.time() - start_time)
             predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
@@ -178,7 +179,7 @@ class Train(BaseRunner):
                 filepath = os.path.join(pre_save_dir, 'cam_' + filename)
                 mkdir_or_exist(osp.dirname(filepath))
                 img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-                img = cv2.resize(img, (predictions[1], predictions[2]), cv2.INTER_LINEAR)
+                img = cv2.resize(img, (predictions.shape[1], predictions.shape[2]), cv2.INTER_LINEAR)
                 # predictions = predictions.resize_(predictions.shape[0], img.shape[0], img.shape[1])
                 if self.ge_heat_map.mode == "score_cam":
                     cam = get_cam_on_image(img, predictions, score_id=13)

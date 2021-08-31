@@ -45,12 +45,10 @@ class BaseRunner:
         #  build optimizer scheduler
         self.optimizer = build_optimizer(cfg, model)
         self.scheduler = self._initialize('lr_scheduler', torch.optim.lr_scheduler, self.optimizer)
-        self.time_str = meta['time_str']
         self.save_train_metrics_log = cfg.save_train_metrics_log
         self.save_train_predict_fn = cfg.save_train_predict_fn
         self.checkpoint_dir = cfg.checkpoint_dir
-        self.save_pred_fn_path = f'{self.checkpoint_dir}/{self.config.dataset.type}/{self.config.model.type}/' \
-                                 f'{self.time_str}'
+        self.save_pred_fn_path = meta['work_dir']
         self.save_val_pred = cfg.save_val_pred
         self.min_score_threshold = 0.4
         self.ge_heat_map = cfg.ge_heat_map

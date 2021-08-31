@@ -1,4 +1,5 @@
-{  "pretrained": "/home/pupa/pretained/mit_b0.pth",
+{
+    "pretrained": "/home/pupa/pretained/mit_b0.pth",
     "model": {
         "type": "EncoderDecoder",
         "backbone": {
