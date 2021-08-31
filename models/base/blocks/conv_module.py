@@ -318,6 +318,7 @@ class _routing(nn.Module):
         return F.sigmoid(x)
 
 
+@PLUGIN_LAYERS.register_module()
 class CondConv2D(_ConvNd):
     r"""Learn specialized convolutional kernels for each example.
     As described in the paper
