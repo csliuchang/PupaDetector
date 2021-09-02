@@ -3,9 +3,17 @@ import numpy as np
 import torch
 
 
+class CamMethods:
+    GradCAM = "gradcam"
+    ScoreCAM = "scorecam"
+    GradCAMPlusPlus = "gradcam++"
+    AblationCAM = "ablationcam"
+
+
 def get_cam_on_image(img: object, pred: object, score_id: object = 1) -> object:
     """
 
+    :type pred: object
     :rtype: object
     """
     pred = torch.sigmoid(pred)

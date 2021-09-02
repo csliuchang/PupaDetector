@@ -78,7 +78,18 @@ def get_logger(
     plain_formatter = logging.Formatter(
         "[%(asctime)s] %(name)s %(levelname)s: %(message)s", datefmt="%m/%d %H:%M:%S"
     )
-
+    if distributed_rank == 0:
+        ch = logging.StreamHandler(stream=sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        if color:
+            formatter = _ColorfulFormatter(
+                colored("[%(asctime)s %(filename)s]: ", "green") + "%(message)s",
+                datefmt="%m/%d %H:%M:%S",
+            )
+        else:
+            formatter = plain_formatter
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
     # file logging: all workers
     if output is not None:
@@ -86,34 +97,18 @@ def get_logger(
             filename = output
         else:
             filename = os.path.join(output, "log.txt")
+
         if distributed_rank > 0:
             filename = filename + ".rank{}".format(distributed_rank)
+
         PathManager.mkdirs(os.path.dirname(filename))
+
         if distributed_rank == 0:
             fh = logging.StreamHandler(_cached_log_stream(filename))
-            fh.setLevel(logging.DEBUG)
-            if color:
-                formatter = _ColorfulFormatter(
-                    colored("[%(asctime)s %(filename)s]: ", "green") + "%(message)s",
-                    datefmt="%m/%d %H:%M:%S",
-                )
-            else:
-                formatter = plain_formatter
-            fh.setFormatter(formatter)
+            fh.setLevel(logging.INFO)
+            fh.setFormatter(plain_formatter)
             logger.addHandler(fh)
-    else:
-        if distributed_rank == 0:
-            ch = logging.StreamHandler(stream=sys.stdout)
-            ch.setLevel(logging.DEBUG)
-            if color:
-                formatter = _ColorfulFormatter(
-                    colored("[%(asctime)s %(filename)s]: ", "green") + "%(message)s",
-                    datefmt="%m/%d %H:%M:%S",
-                )
-            else:
-                formatter = plain_formatter
-            ch.setFormatter(formatter)
-            logger.addHandler(ch)
+
     return logger
 
 

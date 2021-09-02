@@ -11,7 +11,7 @@ import cv2
 import os
 from utils.visual import get_cam_on_image
 import torch.distributed as dist
-
+from pytorch_grad_cam import ScoreCAM
 
 
 class Train(BaseRunner):
@@ -44,10 +44,10 @@ class Train(BaseRunner):
             #     mkdir_or_exist(osp.dirname(filepath))
             #     mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
             #     cv2.imwrite(filepath, mask*255)
-
             losses = self.model(_img, ground_truth=_ground_truth, return_metrics=True)
             losses = losses["loss"]
             losses.backward()
+            activations, grads = self.activations, self.gradients
             self.optimizer.step()
             self.scheduler.step()
 
@@ -129,7 +129,9 @@ class Train(BaseRunner):
             cur_batch = _img.shape[0]
             total_frame += cur_batch
             start_time = time.time()
+            self.activations = []
             predicts = self.model(_img)
+            activations = self.activations
             total_time += (time.time() - start_time)
             predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
                                                         _ground_truth)
@@ -163,7 +165,8 @@ class Train(BaseRunner):
                 image_path = osp.join(self.data_root, 'images', img_file)
                 ori_img = cv2.imread(image_path, 0)
                 predict_labels = np.expand_dims(predict_labels, axis=-1)
-                predict_labels = cv2.resize(predict_labels, [ori_img.shape[0], ori_img.shape[1]], interpolation=cv2.INTER_LINEAR)
+                predict_labels = cv2.resize(predict_labels, [ori_img.shape[0], ori_img.shape[1]],
+                                            interpolation=cv2.INTER_LINEAR)
                 merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels * 255, 0.5, 0)
                 cv2.imwrite(filepath, merge_img)
         else:
@@ -186,7 +189,6 @@ class Train(BaseRunner):
                 elif self.ge_heat_map.mode == "grad_cam":
                     pass
                 cv2.imwrite(filepath, cam)
-
 
     def _after_train(self):
         self.logger.info('all train epoch is finished')

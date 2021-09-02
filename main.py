@@ -112,6 +112,7 @@ def main():
         datasets,
         model,
         meta,
+        logger,
         distributed=False
     )
     trainer.run()

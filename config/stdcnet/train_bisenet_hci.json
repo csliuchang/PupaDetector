@@ -40,6 +40,10 @@
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
   "save_val_pred": false,
+        "ge_heat_map": {
+    "enable": false,
+    "mode": "score_cam"
+  },
   "checkpoint_dir": "/home/pupa/PycharmProjects/PupaDetector/outputs"
 
 }

@@ -3,14 +3,14 @@
     <option name="myName" value="Project Default" />
     <inspection_tool class="AlphaUnsortedPropertiesFile" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="AngularAmbiguousComponentTag" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="AngularCliAddDependency" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="AngularInaccessibleComponentMemberInAotMode" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AngularCliAddDependency" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AngularInaccessibleComponentMemberInAotMode" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularIncorrectTemplateDefinition" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="AngularInsecureBindingToEvent" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AngularInsecureBindingToEvent" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularInvalidAnimationTriggerAssignment" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularInvalidEntryComponent" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="AngularInvalidExpressionResultType" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="AngularInvalidI18nAttribute" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AngularInvalidExpressionResultType" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AngularInvalidI18nAttribute" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularInvalidImportedOrDeclaredSymbol" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularInvalidSelector" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AngularInvalidTemplateReferenceVariable" enabled="true" level="ERROR" enabled_by_default="true" />

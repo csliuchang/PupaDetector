@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 class BaseRunner:
-    def __init__(self, cfg, datasets, model, meta, distributed=False):
+    def __init__(self, cfg, datasets, model, meta, logger, distributed=False):
         # get config
         self.config = cfg
         self.distributed = distributed
@@ -19,7 +19,7 @@ class BaseRunner:
         self.log_iter = cfg.log_iter
         self.network_type = cfg.network_type
         self.val_iter = 1
-        self.logger = get_root_logger()
+        self.logger = logger
         # set device
         if len(datasets) == 2:
             train_dataset, val_dataset = datasets
@@ -27,6 +27,12 @@ class BaseRunner:
             train_dataset = datasets
             val_dataset = None
         model = model.cuda()
+        # show cam on models
+        self.gradients = []
+        self.activations = []
+        self.target_layer = model.decode_head.conv_out16
+        self.target_layer.register_forward_hook(self.save_activation)
+        self.target_layer.register_backward_hook(self.save_gradient)
         self.model = nn.parallel.DistributedDataParallel(model,
                                                          device_ids=[cfg.local_rank, ],
                                                          output_device=cfg.local_rank,
@@ -95,6 +101,15 @@ class BaseRunner:
 
     def _after_train(self):
         raise NotImplementedError
+
+    def save_activation(self, module, input, output):
+        activation = output
+        self.activations.append(activation.cpu().detach())
+
+    def save_gradient(self, module, grad_input, grad_output):
+        # Gradients are computed in reverse order
+        grad = grad_output[0]
+        self.gradients = [grad.cpu().detach()] + self.gradients
 
     def _initialize(self, name, module, *args, **kwargs):
         module_name = self.config[name]['type']
