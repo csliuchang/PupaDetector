@@ -20,10 +20,7 @@
             "sp16_in_channels": 512,
             "head_width": 64,
             "num_classes": 1,
-            "loss": {"type": "OhemCELoss",
-                    "thresh":  0.7,
-                    "n_min": 65536
-            },
+            "loss": {"type": "DiveCELoss"},
             "bound_loss": {"type": "DetailAggregateLoss"}
         }
     },

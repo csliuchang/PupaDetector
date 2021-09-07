@@ -1,11 +1,12 @@
 import time
-
 import torch
-from datasets.builder import build_dataset, build_dataloader
+from datasets.builder import build_dataloader
 from engine.optimizer import build_optimizer
 from utils.metrics import RotateDetEval, SegEval
-from utils import get_root_logger
+from tqdm import tqdm
+from utils.metrics.rotate_metrics import combine_predicts_gt
 import torch.nn as nn
+import numpy as np
 
 
 class BaseRunner:
@@ -31,8 +32,8 @@ class BaseRunner:
         self.gradients = []
         self.activations = []
         self.target_layer = model.decode_head.conv_out16
-        self.target_layer.register_forward_hook(self.save_activation)
-        self.target_layer.register_backward_hook(self.save_gradient)
+        self.target_layer.register_forward_hook(self._save_activation)
+        self.target_layer.register_backward_hook(self._save_gradient)
         self.model = nn.parallel.DistributedDataParallel(model,
                                                          device_ids=[cfg.local_rank, ],
                                                          output_device=cfg.local_rank,
@@ -79,7 +80,7 @@ class BaseRunner:
             if self.distributed:
                 pass
             ret_results = self._train_epoch(epoch)
-            self.draw_lr(ret_results)
+
             if epoch % self.val_iter == 0:
                 self._after_epoch(ret_results)
         self._after_train()
@@ -88,13 +89,86 @@ class BaseRunner:
         """
         epoch training logic
         """
-        raise NotImplementedError
+        all_losses = []
+        self.model.train()
+        epoch_start = time.time()
+        batch_start = time.time()
+        logger_batch = 0
+        lr = self.optimizer.param_groups[0]['lr']
+        for count, data in enumerate(self.train_dataloader):
+            if count >= len(self.train_dataloader):
+                break
+            self.global_step += 1
+            _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
+            _img = _img.cuda()
+            for key, value in _ground_truth.items():
+                if value is not None:
+                    if isinstance(value, torch.Tensor):
+                        _ground_truth[key] = value.cuda()
+            batch = _img.shape[0]
+            logger_batch += batch
+            self.optimizer.zero_grad()
+            # if True:
+            #     filepath = osp.join(self.save_pred_fn_path, 'masks')
+            #     filepath = osp.join(filepath, data['images_collect']['img_metas'][0]['filename'])
+            #     mkdir_or_exist(osp.dirname(filepath))
+            #     mask = _ground_truth['gt_masks'][0].cpu().detach().numpy()
+            #     cv2.imwrite(filepath, mask*255)
+            losses = self.model(_img, ground_truth=_ground_truth, return_metrics=True)
+            losses = losses["loss"]
+            losses.backward()
+            activations, grads = self.activations, self.gradients
+            self.optimizer.step()
+            self.scheduler.step()
 
+            losses = losses.detach().cpu().numpy()
+            all_losses.append(losses)
+            if self.global_step % self.log_iter == 0:
+                batch_time = time.time() - batch_start
+                self.logger.info(
+                    'epochs=>[%d/%d], pers=>[%d/%d], training step: %d, running loss: %f, time/pers: %d ms' % (
+                        epoch, self.epochs, (count + 1) * batch, len(self.train_dataloader.dataset), self.global_step,
+                        np.array(all_losses).mean(), (batch_time * 1000) / logger_batch))
+            if self.save_train_metrics_log:
+                pass
+            if self.save_train_predict_fn:
+                pass
+
+        return {'train_loss': sum(all_losses) / len(self.train_dataloader), 'lr': lr,
+                'time': time.time() - epoch_start, 'epoch': epoch}
+
+    @torch.no_grad()
     def _eval(self, epoch):
         """
-        eval logic for an epoch
+        Eval logic
         """
-        raise NotImplementedError
+        self.model.eval()
+        final_collection = []
+        total_frame = 0.0
+        total_time = 0.0
+        for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
+                            desc='begin val mode'):
+            _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
+            _img = _img.cuda()
+            for key, value in _ground_truth.items():
+                if value is not None:
+                    if isinstance(value, torch.Tensor):
+                        _ground_truth[key] = value.cuda()
+            cur_batch = _img.shape[0]
+            total_frame += cur_batch
+            start_time = time.time()
+            predicts = self.model(_img)
+            total_time += (time.time() - start_time)
+            predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
+                                                        _ground_truth)
+            final_collection.append(predict_gt_collection)
+        if self.save_val_pred:
+            self._save_val_prediction(final_collection)
+        if self.ge_heat_map.enable:
+            self._generate_heat_map(final_collection)
+        metric = self.eval_method(final_collection, self.num_classes)
+        self.logger.info('%2f FPS' % (total_frame / total_time))
+        return metric
 
     def _after_epoch(self, results):
         pass
@@ -102,11 +176,11 @@ class BaseRunner:
     def _after_train(self):
         raise NotImplementedError
 
-    def save_activation(self, module, input, output):
+    def _save_activation(self, module, input, output):
         activation = output
         self.activations.append(activation.cpu().detach())
 
-    def save_gradient(self, module, grad_input, grad_output):
+    def _save_gradient(self, module, grad_input, grad_output):
         # Gradients are computed in reverse order
         grad = grad_output[0]
         self.gradients = [grad.cpu().detach()] + self.gradients
@@ -118,5 +192,8 @@ class BaseRunner:
         module_args.update(kwargs)
         return getattr(module, module_name)(*args, **module_args)
 
-    def draw_lr(self, results):
-        lr = results['lr']
+    def _save_val_prediction(self, final_collections):
+        raise NotImplementedError
+
+    def _generate_heat_map(self, final_collections):
+        raise NotImplementedError

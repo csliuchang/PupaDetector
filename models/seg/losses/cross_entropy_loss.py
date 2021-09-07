@@ -261,6 +261,23 @@ class TopKLoss(CrossEntropyLoss):
 
 
 @LOSSES.register_module()
+class DiveCELoss(nn.Module):
+    def __init__(self, div_factor=0.7, ignore_lb=255, *args, **kwargs):
+        super(DiveCELoss, self).__init__()
+        self.div_factor = div_factor
+        self.ignore_lb = ignore_lb
+        self.criteria = nn.CrossEntropyLoss(ignore_index=ignore_lb, reduction='none')
+
+    def forward(self, logits, labels):
+        loss_div_value = []
+        N, C, H, W = logits.size()
+        loss = self.criteria(logits, labels).view(-1)
+        loss_div = torch.mul(torch.max(loss), self.div_factor)
+        index = torch.nonzero(loss > loss_div, as_tuple=False)
+        return torch.mean(loss[index])
+
+
+@LOSSES.register_module()
 class OhemCELoss(nn.Module):
     def __init__(self, thresh, n_min, ignore_lb=255, *args, **kwargs):
         super(OhemCELoss, self).__init__()
@@ -273,8 +290,10 @@ class OhemCELoss(nn.Module):
         N, C, H, W = logits.size()
         loss = self.criteria(logits, labels).view(-1)
         loss, _ = torch.sort(loss, descending=True)
-        if loss[self.n_min] > self.thresh:
-            loss = loss[loss>self.thresh]
+        if len(loss) <= self.n_min:
+            loss = loss
+        elif loss[self.n_min] > self.thresh:
+            loss = loss[loss > self.thresh]
         else:
             loss = loss[:self.n_min]
         return torch.mean(loss)

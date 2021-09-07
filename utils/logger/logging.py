@@ -143,6 +143,7 @@ def print_log(msg, logger=None, level=logging.INFO):
             f'"silent" or None, but got {type(logger)}')
 
 
+@functools.lru_cache(maxsize=None)
 def _cached_log_stream(filename):
     io = PathManager.open(filename, "a")
     atexit.register(io.close)

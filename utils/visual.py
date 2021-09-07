@@ -24,3 +24,4 @@ def get_cam_on_image(img: object, pred: object, score_id: object = 1) -> object:
     heat_map = cv2.applyColorMap(np.uint8(pred), cv2.COLORMAP_JET)
     cam = cv2.addWeighted(img, 0.5, heat_map, 0.5, 0)
     return cam
+

@@ -6,8 +6,6 @@ import numpy as np
 from .builder import DATASETS
 
 
-
-
 @DATASETS.register_module()
 class CityStcapes(BaseDataset):
     def __init__(self, *args, **kwargs):

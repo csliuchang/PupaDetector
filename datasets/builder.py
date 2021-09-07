@@ -5,9 +5,7 @@ from functools import partial
 import numpy as np
 import torch.nn.functional as F
 import random
-from collections.abc import Mapping, Sequence
 from torch.utils.data import DataLoader
-from engine.parallel import DataContainer
 from torch.utils.data.dataloader import default_collate
 
 DATASETS = Registry('dataset')

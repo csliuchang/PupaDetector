@@ -11,7 +11,6 @@ from specific.bbox.coder.delta_xywha_bbox_coder import delta2bbox
 __all__ = ["RRetinaNet"]
 
 
-
 @DETECTORS.register_module()
 class RRetinaNet(BaseDetector):
     """

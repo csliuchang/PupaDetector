@@ -3,13 +3,10 @@ from utils import Config, get_root_logger, model_info
 from utils.dist_utils import _find_free_port
 import os
 from models import build_detector, build_segmentor
-from trainer.train import Train
+from trainer.train_seg import TrainSeg
 from datasets import build_dataset
 import time
 import torch
-import random
-import numpy as np
-import logging
 import os.path as osp
 import copy
 from utils import load_checkpoint
@@ -33,6 +30,8 @@ def parse_args():
         os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
 
+
+TrainerFactory = {"segmentation": TrainSeg}
 
 
 def main():
@@ -107,7 +106,8 @@ def main():
     if os.path.exists(cfg.pretrained):
         load_checkpoint(model, cfg.pretrained, map_location='cpu', strict=True)
         logger.info('pretrained checkpoint is loaded.')
-    trainer = Train(
+    trainer_engine = TrainerFactory[network_type]
+    trainer = trainer_engine(
         cfg,
         datasets,
         model,
