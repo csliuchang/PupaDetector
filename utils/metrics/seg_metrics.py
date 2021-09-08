@@ -2,13 +2,14 @@ import torch
 
 
 class SegEval(object):
-    def __init__(self, ignore_label=255):
+    def __init__(self, num_classes=1, ignore_label=255):
         pass
         self.ignore_label = ignore_label
+        self.num_classes = num_classes
 
-    def __call__(self, collections, n_classes):
-        if n_classes == 1:
-            n_classes = n_classes + 1
+    def __call__(self, collections):
+        if self.num_classes == 1:
+            n_classes = self.num_classes + 1
         hist = torch.zeros(n_classes, n_classes).cuda().detach()
         for collection in collections:
             logits = collection['predicts']

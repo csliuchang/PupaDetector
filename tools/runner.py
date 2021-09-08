@@ -61,11 +61,11 @@ class BaseRunner:
                 self.num_classes = cfg.model.decode_head[0].num_classes
             else:
                 raise TypeError('not support decode head type =')
-            self.eval_method = SegEval()
+            self.eval_method = SegEval(num_classes=self.num_classes)
             self.metrics = {'miou': 0.}
         else:
             self.num_classes = cfg.model.bbox_head.num_classes
-            self.eval_method = RotateDetEval()
+            self.eval_method = RotateDetEval(num_classes=self.num_classes)
             self.metrics = {'precision': 0., 'recall': 0., 'mAP': 0., 'train_loss': float('inf'), 'best_model_epoch': 0}
 
     def run(self):
@@ -162,7 +162,7 @@ class BaseRunner:
             self._save_val_prediction(final_collection)
         if self.ge_heat_map.enable:
             self._generate_heat_map(final_collection)
-        metric = self.eval_method(final_collection, self.num_classes)
+        metric = self.eval_method(final_collection)
         self.logger.info('%2f FPS' % (total_frame / total_time))
         return metric
 

@@ -14,22 +14,24 @@ def combine_predicts_gt(predicts, metas, gt, network_type='segmentation'):
 
 
 class RotateDetEval(object):
-    def __init__(self):
+    def __init__(self, num_classes=1, min_score_threshold=0.4, min_iou_threshold=0.35):
+        self.min_score_threshold = min_score_threshold
+        self.min_iou_threshold = min_iou_threshold
+        self.num_classes = num_classes
+
+    def val_per_measure(self):
+        """
+        Evaluate val datasets with batch
+        """
         pass
 
-    def val_per_measure(self, ):
-        """
-        Evaluate val datasets with batchz
-        """
-        pass
-
-    def __call__(self, collections, num_classes=1, min_score_threshold=0.4, min_iou_threshold=0.35):
-        tp_per_class = [[] for _ in range(num_classes)]
-        fp_per_class = [[] for _ in range(num_classes)]
-        gt_counter_class = [0] * num_classes
+    def __call__(self, collections):
+        tp_per_class = [[] for _ in range(self.num_classes)]
+        fp_per_class = [[] for _ in range(self.num_classes)]
+        gt_counter_class = [0] * self.num_classes
         for collection in collections:
             preds = np.array(collection["predctions"], np.float32)
-            fiter_flags = preds[:, 9] > min_score_threshold
+            fiter_flags = preds[:, 9] > self.min_score_threshold
             preds = preds[fiter_flags.reshape(-1), :]
             gt_bboxes = collection["gt_bboxes"]
             gt_labels = collection["gt_labels"]
@@ -41,6 +43,7 @@ class RotateDetEval(object):
             already_match = [False] * num_of_gt_per_img
 
             for pred in preds:
+                # default lable is start 0, so need to reduce 1
                 pred_bbox, score, pred_cls = pred[:8], pred[8], int(pred[9]) - 1
                 pred_bbox = np.array(pred_bbox, dtype=np.float32).reshape(4, 2)
                 tp, fp, max_iou = 0, 0, 0
@@ -57,7 +60,7 @@ class RotateDetEval(object):
                     max_iou = iou
                     match_gt_idx = gt_idx
                     pass
-                if max_iou >= min_iou_threshold:
+                if max_iou >= self.min_iou_threshold:
                     if not already_match[match_gt_idx]:
                         # tp
                         already_match[match_gt_idx] = True
@@ -78,7 +81,7 @@ class RotateDetEval(object):
         ap_sum = 0
         prec_sum = 0
         rec_sum = 0
-        for cls_idx in range(num_classes):
+        for cls_idx in range(self.num_classes):
             fp = fp_per_class[cls_idx]
             tp = tp_per_class[cls_idx]
 
@@ -105,14 +108,17 @@ class RotateDetEval(object):
             prec_sum += prec[-2]
             rec_sum += rec[-2]
 
-        mAP = ap_sum / num_classes
-        prec = prec_sum / num_classes
-        rec = rec_sum / num_classes
+        mAP = ap_sum / self.num_classes
+        prec = prec_sum / self.num_classes
+        rec = rec_sum / self.num_classes
 
         return prec, rec, mAP
 
     @staticmethod
     def _get_intersection_over_union(pred, gt_bbox):
+        """
+        A simple polygon iou compute function
+        """
         union = Polygon(pred).union(Polygon(gt_bbox)).area
         inter = Polygon(pred).intersection(Polygon(gt_bbox)).area
         return inter / union
