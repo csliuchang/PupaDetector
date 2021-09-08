@@ -2,6 +2,11 @@ from tools import BaseRunner
 from utils import save_checkpoint
 import os.path as osp
 from .build import Trainer
+import os
+import torch
+from utils import save_checkpoint, mkdir_or_exist
+import numpy as np
+import cv2
 
 
 @Trainer.register_module()
@@ -38,7 +43,32 @@ class TrainDet(BaseRunner):
         self.logger.info('--' * 10 + f'finish {results["epoch"]} epoch training.' + '--' * 10)
 
     def _save_val_prediction(self, final_collections):
-        pass
+        """
+        Detection prediction
+        """
+        pre_save_dir = self.save_pred_fn_path + '/predicts'
+        for final_collection in final_collections:
+            predictions = final_collection['predicts']
+            filename = final_collection['img_metas']['filename']
+            filepath = os.path.join(pre_save_dir, 'val_' + filename)
+            predict = torch.softmax(predictions, dim=0)
+            predictions = predict.cpu().detach().numpy()
+            predict_labels = np.argmax(predictions, axis=0).astype(np.uint8)
+            if predictions.shape[0] == 2:
+                max_scores = predictions[1, ...]
+                predict_labels[max_scores >= self.min_score_threshold] = 1
+                predict_labels[max_scores < self.min_score_threshold] = 0
+            else:
+                pass
+            mkdir_or_exist(osp.dirname(filepath))
+            img_file = final_collection['img_metas']['filename']
+            image_path = osp.join(self.data_root, 'images', img_file)
+            ori_img = cv2.imread(image_path, 0)
+            predict_labels = np.expand_dims(predict_labels, axis=-1)
+            predict_labels = cv2.resize(predict_labels, [ori_img.shape[0], ori_img.shape[1]],
+                                        interpolation=cv2.INTER_LINEAR)
+            merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels * 255, 0.5, 0)
+            cv2.imwrite(filepath, merge_img)
 
     def _generate_heat_map(self, final_collections):
         pre_save_dir = self.save_pred_fn_path + '/heatmaps'
