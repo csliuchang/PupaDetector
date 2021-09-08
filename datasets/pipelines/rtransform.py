@@ -55,14 +55,8 @@ class RResize(object):
         height_ratio = float(self.resize_height) / original_height
         new_bbox = []
         for bbox in bboxes:
-            bbox[0] = int(bbox[0] * width_ratio)
-            bbox[2] = int(bbox[2] * width_ratio)
-            bbox[4] = int(bbox[4] * width_ratio)
-            bbox[6] = int(bbox[6] * width_ratio)
-            bbox[1] = int(bbox[1] * height_ratio)
-            bbox[3] = int(bbox[3] * height_ratio)
-            bbox[5] = int(bbox[5] * height_ratio)
-            bbox[7] = int(bbox[7] * height_ratio)
+            bbox = [int(np.clip(bbox[i], 0, original_height)*height_ratio) if i in [1, 3, 5, 7]
+                    else int(np.clip(bbox[i], 0, original_width)*width_ratio) for i in range(len(bbox))]
             new_bbox.append(bbox)
         new_bbox = np.array(new_bbox, dtype=np.float32)
         results['ann_info']['bboxes'] = new_bbox
@@ -71,9 +65,6 @@ class RResize(object):
         self._resize_img(results)
         self._resize_bboxes(results)
         return results
-
-
-
 
 
 @PIPELINES.register_module()
@@ -119,7 +110,6 @@ class Collect(object):
         self.meta_keys = meta_keys
         self.bg_first = bg_first
 
-
     def __call__(self, results):
         data = {}
         img_meta = {}
@@ -135,6 +125,7 @@ class Collect(object):
         if 'bboxes' in results['ann_info']:
             results['gt_bboxes'] = np.array(results['ann_info']['bboxes'], dtype=np.float32)
             results['gt_masks'] = np.ones(shape=results['image_shape'], dtype=np.uint8) * 0.
+            results['gt_labels'] = results['ann_info']['labels']
         elif 'polygons' in results:
             if 'masks' in self.keys:
                 results['masks'] = polyline2masks(results, self.bg_first)

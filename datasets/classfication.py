@@ -1,21 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def unpickle(file):
     import pickle
     with open(file, 'rb') as fo:

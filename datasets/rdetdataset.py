@@ -19,10 +19,6 @@ class RDetDatasets(BaseDataset):
         self.cls_map = {c: i for i, c in enumerate(self.category)}
         super(RDetDatasets, self).__init__(*args, **kwargs)
 
-
-    def _set_group_flag(self):
-        self.flag = np.zeros(len(self), dtype=np.uint8)
-
     def load_annotations(self, ann_file):
         data_infos = []
         lines = [line.strip() for line in open(ann_file, 'r').readlines()]
@@ -53,9 +49,6 @@ class RDetDatasets(BaseDataset):
             )
             data_infos.append(data_info)
         return data_infos
-
-
-
 
 
 if __name__ == "__main__":

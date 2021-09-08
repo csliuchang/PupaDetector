@@ -18,6 +18,9 @@ from .build import Trainer
 class TrainSeg(BaseRunner):
     def __init__(self, *args, **kwargs):
         super(TrainSeg, self).__init__(*args, **kwargs)
+        self.target_layer = self.model.decode_head.conv_out16
+        self.target_layer.register_forward_hook(self._save_activation)
+        self.target_layer.register_backward_hook(self._save_gradient)
 
     def _after_epoch(self, results):
         self.logger.info('finish %d epoch, train_loss: %f, time: %d ms, lr: %s' % (
@@ -25,7 +28,7 @@ class TrainSeg(BaseRunner):
             results['time'] * 1000, results['lr']))
         model_save_dir = osp.join(self.save_pred_fn_path, 'checkpoints')
         net_save_path_best = osp.join(model_save_dir, 'model_best.pth')
-        net_save_path_loss_best = osp.join(model_save_dir, f'model_best_loss.pth')
+        net_save_path_loss_best = osp.join(model_save_dir, 'model_best_loss.pth')
         assert self.val_dataloader is not None, "no val data in the dataset"
         miou = self._eval(results['epoch'])
         if miou >= self.metrics['miou']:

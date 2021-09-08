@@ -1,17 +1,6 @@
-import torch
-import copy
 from tools import BaseRunner
-from utils import save_checkpoint, mkdir_or_exist
-import time
-import numpy as np
+from utils import save_checkpoint
 import os.path as osp
-from tqdm import tqdm
-from utils.metrics.rotate_metrics import combine_predicts_gt
-import cv2
-import os
-from utils.visual import get_cam_on_image
-import torch.distributed as dist
-from pytorch_grad_cam import ScoreCAM
 from .build import Trainer
 
 
@@ -26,7 +15,7 @@ class TrainDet(BaseRunner):
             results['time'] * 1000, results['lr']))
         model_save_dir = osp.join(self.save_pred_fn_path, 'checkpoints')
         net_save_path_best = osp.join(model_save_dir, 'model_best.pth')
-        net_save_path_loss_best = osp.join(model_save_dir, f'model_best_loss.pth')
+        net_save_path_loss_best = osp.join(model_save_dir, 'model_best_loss.pth')
         assert self.val_dataloader is not None, "no val data in the dataset"
         precision, recall, mAP = self._eval(results['epoch'])
         if mAP >= self.metrics['mAP']:
@@ -44,7 +33,7 @@ class TrainDet(BaseRunner):
             pass
         best_str = 'current best, '
         for k, v in self.metrics.items():
-            best_str += '{}: {:.6f}, '.format(k, v)
+            best_str += '{}: {:.4f}, '.format(k, v)
         self.logger.info(best_str)
         self.logger.info('--' * 10 + f'finish {results["epoch"]} epoch training.' + '--' * 10)
 

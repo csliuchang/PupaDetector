@@ -14,8 +14,7 @@ class BaseRunner:
         # get config
         self.config = cfg
         self.distributed = distributed
-        self.start_epoch = 0
-        self.global_step = 0
+        self.start_epoch, self.global_step = 0, 0
         self.epochs = cfg.total_epochs
         self.log_iter = cfg.log_iter
         self.network_type = cfg.network_type
@@ -25,15 +24,11 @@ class BaseRunner:
         if len(datasets) == 2:
             train_dataset, val_dataset = datasets
         else:
-            train_dataset = datasets
-            val_dataset = None
+            train_dataset, val_dataset = datasets, None
         model = model.cuda()
         # show cam on models
         self.gradients = []
         self.activations = []
-        self.target_layer = model.decode_head.conv_out16
-        self.target_layer.register_forward_hook(self._save_activation)
-        self.target_layer.register_backward_hook(self._save_gradient)
         self.model = nn.parallel.DistributedDataParallel(model,
                                                          device_ids=[cfg.local_rank, ],
                                                          output_device=cfg.local_rank,
@@ -69,8 +64,9 @@ class BaseRunner:
             self.eval_method = SegEval()
             self.metrics = {'miou': 0.}
         else:
+            self.num_classes = cfg.model.bbox_head.num_classes
             self.eval_method = RotateDetEval()
-            self.metrics = {'recall': 0., 'precision': 0., 'mAP': 0., 'train_loss': float('inf'), 'best_model_epoch': 0}
+            self.metrics = {'precision': 0., 'recall': 0., 'mAP': 0., 'train_loss': float('inf'), 'best_model_epoch': 0}
 
     def run(self):
         """
@@ -160,7 +156,7 @@ class BaseRunner:
             predicts = self.model(_img)
             total_time += (time.time() - start_time)
             predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
-                                                        _ground_truth)
+                                                        _ground_truth, self.network_type)
             final_collection.append(predict_gt_collection)
         if self.save_val_pred:
             self._save_val_prediction(final_collection)

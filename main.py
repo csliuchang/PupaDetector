@@ -3,7 +3,7 @@ from utils import Config, get_root_logger, model_info
 from utils.dist_utils import _find_free_port
 import os
 from models import build_detector, build_segmentor
-from trainer.train_seg import TrainSeg
+from trainer import TrainSeg, TrainDet
 from datasets import build_dataset
 import time
 import torch
@@ -16,7 +16,7 @@ import torch.distributed as dist
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('--seed', type=int, default=2, help='random seed')
-    parser.add_argument('--config', default='./config/segformer/train_segformer_hci.json', help='train config file path')
+    parser.add_argument('--config', default='./config/rretinanet/train_retinanet_msra.json', help='train config file path')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
@@ -31,7 +31,8 @@ def parse_args():
     return args
 
 
-TrainerFactory = {"segmentation": TrainSeg}
+TrainerFactory = {"segmentation": TrainSeg,
+                  "rotate_detection": TrainDet}
 
 
 def main():
@@ -87,8 +88,9 @@ def main():
     network_type = cfg.network_type
     cfg.model.backbone.in_channels = cfg.input_channel
     cfg.model.backbone.input_size = (cfg.input_width, cfg.input_height)
-    if network_type in ['rotate_detector', 'detector']:
+    if network_type in ['rotate_detection', 'detection']:
         model = build_detector(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+        cfg.model.bbox_head.num_classes = cfg.num_classes
     else:
         if isinstance(cfg.model.decode_head, dict):
             cfg.model.decode_head.num_classes = cfg.num_classes

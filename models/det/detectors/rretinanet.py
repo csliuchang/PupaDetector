@@ -75,8 +75,8 @@ class RRetinaNet(BaseDetector):
         if self.device != inputs.device:
             self.device = inputs.device
         if return_metrics:
-            boxes, metrics = self.forward_train(inputs, **kwargs)
-            return boxes, self._parse_metrics(metrics)
+            metrics = self.forward_train(inputs, **kwargs)
+            return self._parse_metrics(metrics)
         else:
             return self.forward_infer(inputs, **kwargs)
 
@@ -92,10 +92,10 @@ class RRetinaNet(BaseDetector):
             losses['s0.{}'.format(name)] = value
 
         # bboxes inference
-        bbox_inputs = outs + (inputs, self.test_cfg)
-        bbox_cls = self.bbox_head.get_bboxes(*bbox_inputs)
+        # bbox_inputs = outs + (inputs, self.test_cfg)
+        # bbox_cls = self.bbox_head.get_bboxes(*bbox_inputs)
 
-        return bbox_cls, losses
+        return losses
 
     def forward_infer(self, inputs, **kwargs):
         x = self.extract_feat(inputs)

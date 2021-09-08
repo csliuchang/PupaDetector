@@ -1,14 +1,20 @@
 {
-    "_base": ["/home/pupa/PycharmProjects/LightRotateDet/config/rretinanet/models/rretinanet.json",
-              "/home/pupa/PycharmProjects/LightRotateDet/config/rretinanet/models/rretinanet_yolov5_backbone.json"],
+    "_base": ["/home/pupa/PycharmProjects/PupaDetector/config/rretinanet/models/rretinanet.json",
+              "/home/pupa/PycharmProjects/PupaDetector/config/rretinanet/models/rretinanet_yolov5_backbone.json"],
     "log_level": "INFO",
     "network_type": "rotate_detection",
     "dataset": {
-            "type":  "MSRATD500",
-            "data_root": "/home/pupa/PycharmProjects/LightRotateDet/data/msratd500",
-            "pipeline": [{"type": "Collect", "keys": ["img", "gt_bboxes", "gt_labels"]}],
+            "type":  "RDetDatasets",
+            "data_root": "/home/pupa/PycharmProjects/PupaDetector/data/msratd500",
+            "train_pipeline": [{"type": "RResize", "img_scale": [448, 448]},
+                                {"type": "Collect", "keys": ["img", "gt_labels","gt_bboxes", "gt_masks"], "bg_first": true}],
+            "val_pipeline": [{"type": "RResize", "img_scale": [448, 448]},
+                              {"type": "Collect", "keys": ["img", "gt_labels","gt_bboxes", "gt_masks"], "bg_first": true}],
             "train_file": "txt_train.txt",
-            "val_file": "txt_val.txt"
+            "val_file": "txt_val.txt",
+            "auto_norm": false,
+            "mean": [111.3199462890625, 123.41533660888672, 126.36572265625],
+            "std": [52.47858428955078, 52.73240661621094, 52.4974365234375]
               },
     "dataloader":{
             "samples_per_gpu": 2,
@@ -16,6 +22,7 @@
     },
     "workflow": [["train", 2], ["val", 1]],
     "total_epochs": 100,
+    "num_classes": 1,
     "log_iter": 10,
     "optimizer": "ADAMW",
     "learning_rate": 5e-5,
@@ -35,5 +42,11 @@
      "input_height": 448,
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
-  "checkpoint_dir": "/home/pupa/PycharmProjects/LightRotateDet/outputs"
+  "save_val_pred": false,
+        "ge_heat_map": {
+    "enable": false,
+    "mode": "score_cam"
+  },
+  "checkpoint_dir": "/home/pupa/PycharmProjects/PupaDetector/outputs"
+
 }
