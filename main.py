@@ -16,7 +16,7 @@ import torch.distributed as dist
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('--seed', type=int, default=2, help='random seed')
-    parser.add_argument('--config', default='./config/rretinanet/train_retinanet_msra.json', help='train config file path')
+    parser.add_argument('--config', default='./config/rretinanet/train_obbfcos_msra.json', help='train config file path')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--work-dir', help='the dir to save logs and models')

@@ -221,9 +221,37 @@ def unmap(data, count, inds, fill=0):
         ret[inds.type(torch.bool), :] = data
     return ret
 
+
 def fp16_clamp(x, min=None, max=None):
     if not x.is_cuda and x.dtype == torch.float16:
         # clamp for cpu float16, tensor fp16 has no clamp implementation
         return x.float().clamp(min, max).half()
 
     return x.clamp(min, max)
+
+
+def get_bbox_dim(bbox_type, with_score=False):
+    if bbox_type == 'hbb':
+        dim = 4
+    elif bbox_type == 'obb':
+        dim = 5
+    elif bbox_type == 'poly':
+        dim = 8
+    else:
+        raise ValueError(f"don't know {bbox_type} bbox dim")
+
+    if with_score:
+        dim += 1
+    return dim
+
+
+def arb2result(bboxes, labels, num_classes, bbox_type='hbb'):
+    assert bbox_type in ['hbb', 'obb', 'poly']
+    bbox_dim = get_bbox_dim(bbox_type, with_score=True)
+
+    if bboxes.shape[0] == 0:
+        return [np.zeros((0, bbox_dim), dtype=np.float32) for i in range(num_classes)]
+    else:
+        bboxes = bboxes.cpu().numpy()
+        labels = labels.cpu().numpy()
+        return [bboxes[labels == i, :] for i in range(num_classes)]

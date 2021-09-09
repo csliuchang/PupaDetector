@@ -9,7 +9,7 @@ def combine_predicts_gt(predicts, metas, gt, network_type='segmentation'):
     else:
 
         gt_bboxes, gt_labels, gt_masks = gt["gt_bboxes"], gt["gt_labels"], gt["gt_masks"]
-        return dict(img_meats=metas, predctions=predicts.squeeze(0),
+        return dict(img_metas=metas, predictions=predicts.squeeze(0),
                     gt_bboxes=gt_bboxes[0], gt_labels=gt_labels[0], gt_masks=gt_masks[0])
 
 
@@ -30,7 +30,7 @@ class RotateDetEval(object):
         fp_per_class = [[] for _ in range(self.num_classes)]
         gt_counter_class = [0] * self.num_classes
         for collection in collections:
-            preds = np.array(collection["predctions"], np.float32)
+            preds = np.array(collection["predictions"], np.float32)
             fiter_flags = preds[:, 9] > self.min_score_threshold
             preds = preds[fiter_flags.reshape(-1), :]
             gt_bboxes = collection["gt_bboxes"]

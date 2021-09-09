@@ -10,6 +10,9 @@ import numpy as np
 
 
 class BaseRunner:
+    """
+    A base runner logic for detector
+    """
     def __init__(self, cfg, datasets, model, meta, logger, distributed=False):
         # get config
         self.config = cfg
@@ -193,3 +196,7 @@ class BaseRunner:
 
     def _generate_heat_map(self, final_collections):
         raise NotImplementedError
+
+    def save_activation(self, module, input, output):
+        activation = output
+        self.activations.append(activation.cpu().detach())

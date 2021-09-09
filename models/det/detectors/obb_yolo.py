@@ -1,4 +1,6 @@
+import torch.nn as nn
 import torch
+import numpy as np
 
 from models.builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
@@ -6,11 +8,11 @@ from models.utils import points2rdets, rdets2points_tensor
 from specific.bbox.coder.delta_xywha_bbox_coder import delta2bbox
 
 
-__all__ = ["RRetinaNet"]
+__all__ = ["RYOLO"]
 
 
 @DETECTORS.register_module()
-class RRetinaNet(BaseDetector):
+class RYOLO(BaseDetector):
     """
     Rotate Refinement RetinaNet, a deepcv pytorch code from : https://github.com/Thinklab-SJTU/R3Det_Tensorflow
     """
@@ -22,7 +24,7 @@ class RRetinaNet(BaseDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(RRetinaNet, self).__init__()
+        super(RYOLO, self).__init__()
         self.device = None
         self.export = False
         self.limit_level = 1
@@ -61,7 +63,7 @@ class RRetinaNet(BaseDetector):
         """
         Pretrained backbone
         """
-        super(RRetinaNet, self).init_weights(pretrained)
+        super(RYOLO, self).init_weights(pretrained)
         if hasattr(self.backbone, 'init_weights'):
             self.backbone.init_weights(pretrained)
         self.bbox_head.init_weights()
@@ -88,10 +90,6 @@ class RRetinaNet(BaseDetector):
         loss_base = self.bbox_head.loss(*input_base)
         for name, value in loss_base.items():
             losses['s0.{}'.format(name)] = value
-
-        # bboxes inference
-        # bbox_inputs = outs + (inputs, self.test_cfg)
-        # bbox_cls = self.bbox_head.get_bboxes(*bbox_inputs)
 
         return losses
 

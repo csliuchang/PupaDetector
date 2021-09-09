@@ -18,9 +18,6 @@ from .build import Trainer
 class TrainSeg(BaseRunner):
     def __init__(self, *args, **kwargs):
         super(TrainSeg, self).__init__(*args, **kwargs)
-        self.target_layer = self.model.decode_head.conv_out16
-        self.target_layer.register_forward_hook(self._save_activation)
-        self.target_layer.register_backward_hook(self._save_gradient)
 
     def _after_epoch(self, results):
         self.logger.info('finish %d epoch, train_loss: %f, time: %d ms, lr: %s' % (

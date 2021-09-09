@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import numpy as np
 
 
 
@@ -41,4 +41,10 @@ def xavier_init(module, gain=1, bias=0, distribution='normal'):
         nn.init.xavier_normal_(module.weight, gain=gain)
     if hasattr(module, 'bias') and module.bias is not None:
         nn.init.constant_(module.bias, bias)
+
+
+def bias_init_with_prob(prior_prob):
+    """initialize conv/fc bias value according to a given probability value."""
+    bias_init = float(-np.log((1 - prior_prob) / prior_prob))
+    return bias_init
 

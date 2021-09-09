@@ -1,6 +1,6 @@
 {
-    "_base": ["/home/pupa/PycharmProjects/PupaDetector/config/rretinanet/models/rretinanet.json",
-              "/home/pupa/PycharmProjects/PupaDetector/config/rretinanet/models/rretinanet_yolov5_backbone.json"],
+    "_base": ["/home/pupa/PycharmProjects/PupaDetector/config/obbfcos/models/obbfcos.json",
+              "/home/pupa/PycharmProjects/PupaDetector/config/obbfcos/models/obbfcos_resnet18.json"],
     "log_level": "INFO",
     "network_type": "rotate_detection",
     "dataset": {
@@ -42,7 +42,7 @@
      "input_height": 448,
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
-  "save_val_pred": true,
+  "save_val_pred": false,
         "ge_heat_map": {
     "enable": false,
     "mode": "score_cam"

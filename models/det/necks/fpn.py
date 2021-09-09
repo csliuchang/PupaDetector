@@ -6,7 +6,6 @@ import torch.nn as nn
 import math
 from models.utils import c2_xavier_fill
 
-
 __all__ = ["FPN"]
 
 
@@ -22,9 +21,7 @@ class FPN(nn.Module):
 
     def __init__(self, input_shapes, out_channels, strides, norm="", fuse_type="sum", in_features='p7',
                  top_block='LastLevelMaxPool'):
-
         super().__init__()
-
         lateral_convs = []
         output_convs = []
         if top_block == 'LastLevelMaxPool':
@@ -80,6 +77,7 @@ class FPN(nn.Module):
 
         self.rev_in_features = list(range(len(input_shapes)))[::-1]
 
+
     def forward(self, x):
         """
         :param x: a tuple contain stage of backbone,
@@ -92,11 +90,11 @@ class FPN(nn.Module):
         results.append(self.output_convs[0](prev_features))
 
         # Reverse feature maps into top-down order (from low to high resolution)
-        for features, lateral_conv, output_conv in zip(self.rev_in_features[1:], self.lateral_convs[1:],
-                                                       self.output_convs[1:]):
-            features = x[features]
-            top_down_features = F.interpolate(prev_features, scale_factor=2.0, mode="nearest")
-            lateral_features = lateral_conv.forward(features)
+        for features_id, lateral_conv, output_conv in zip(self.rev_in_features[1:], self.lateral_convs[1:],
+                                                          self.output_convs[1:]):
+            features = x[features_id]
+            top_down_features = F.interpolate(prev_features, scale_factor=2.0, mode="bilinear", align_corners=True)
+            lateral_features = lateral_conv(features)
             prev_features = lateral_features + top_down_features
             if self._fuse_type == "avg":
                 prev_features /= 2

@@ -42,6 +42,7 @@
      "input_height": 448,
      "save_train_metrics_log": true,
      "save_train_predict_fn": true,
+  "ge_heat_map": false,
   "save_val_pred": false,
   "checkpoint_dir": "./outputs"
 

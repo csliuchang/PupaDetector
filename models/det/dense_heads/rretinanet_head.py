@@ -66,7 +66,6 @@ class RRetinaHead(AnchorHead):
         self.retina_reg = nn.Conv2d(
             self.feat_channels, self.num_anchors * 5, 3, padding=1)
 
-
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -81,7 +80,6 @@ class RRetinaHead(AnchorHead):
         normal_init(self.retina_cls, std=0.01, bias=bias_value)
         normal_init(self.retina_reg, std=0.01)
 
-
     def forward_single(self, x):
         cls_feat = x
         reg_feat = x
@@ -92,55 +90,6 @@ class RRetinaHead(AnchorHead):
         cls_score = self.retina_cls(cls_feat)
         bbox_pred = self.retina_reg(reg_feat)
         return cls_score, bbox_pred
-
-    def refine_bboxes(self):
-        pass
-
-    def filter_bboxes(self, cls_scores, bbox_preds):
-        num_levels = len(cls_scores)
-        assert num_levels == len(bbox_preds)
-
-        num_imgs = cls_scores[0].size(0)
-
-        for i in range(num_levels):
-            assert num_imgs == cls_scores[i].size(0) == bbox_preds[i].size(0)
-
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-
-        bboxes_list = [[] for _ in range(num_imgs)]
-
-        for lvl in range(num_levels):
-            cls_score = cls_scores[lvl]
-            bbox_pred = bbox_preds[lvl]
-
-            anchors = mlvl_anchors[lvl]
-
-            cls_score = cls_score.permute(0, 2, 3, 1)  # (N, H, W, A*C)
-            cls_score = cls_score.reshape(num_imgs, -1, self.num_anchors, self.cls_out_channels)  # (N, H*W, A, C)
-
-            cls_score, _ = cls_score.max(dim=-1, keepdim=True)  # (N, H*W, A, 1)
-            best_ind = cls_score.argmax(dim=-2, keepdim=True)  # (N, H*W, 1, 1)
-            best_ind = best_ind.expand(-1, -1, -1, 5)  # (N, H*W, 1, 5)
-
-            bbox_pred = bbox_pred.permute(0, 2, 3, 1)  # (N, H, W, A*5)
-            bbox_pred = bbox_pred.reshape(num_imgs, -1, self.num_anchors, 5)  # (N, H*W, A, 5)
-
-            best_pred = bbox_pred.gather(dim=-2, index=best_ind).squeeze(dim=-2)  # (N, H*W, 5)
-
-            # anchors shape (H*W*A, 5)
-            anchors = anchors.reshape(-1, self.num_anchors, 5)  # (H*W, A, 5)
-
-            for img_id in range(num_imgs):
-                best_ind_i = best_ind[img_id]  # (H*W, 1, 5)
-                best_pred_i = best_pred[img_id]  # (H*W, 5)
-                best_anchor_i = anchors.gather(dim=-2, index=best_ind_i).squeeze(dim=-2)  # (H*W, 5)
-                best_bbox_i = self.bbox_coder.decode(best_anchor_i, best_pred_i)
-                bboxes_list[img_id].append(best_bbox_i.detach())
-
-        return bboxes_list
 
     def _get_bboxes_single(self,
                            cls_score_list,

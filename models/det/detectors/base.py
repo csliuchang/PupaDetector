@@ -15,7 +15,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @property
     def with_neck(self):
-        return hasattr(self, 'necks') and self.neck is not None
+        return hasattr(self, 'neck') and self.neck is not None
 
     @property
     def with_bbox(self):

@@ -5,8 +5,12 @@ from .build import Trainer
 import os
 import torch
 from utils import save_checkpoint, mkdir_or_exist
+from utils import load_checkpoint
 import numpy as np
 import cv2
+from tqdm import tqdm
+from visual.cam import ScoreCam
+from visual.utils import basic_visualize
 
 
 @Trainer.register_module()
@@ -21,6 +25,7 @@ class TrainDet(BaseRunner):
         model_save_dir = osp.join(self.save_pred_fn_path, 'checkpoints')
         net_save_path_best = osp.join(model_save_dir, 'model_best.pth')
         net_save_path_loss_best = osp.join(model_save_dir, 'model_best_loss.pth')
+        # mkdir_or_exist(model_save_dir)
         assert self.val_dataloader is not None, "no val data in the dataset"
         precision, recall, mAP = self._eval(results['epoch'])
         if mAP >= self.metrics['mAP']:
@@ -48,31 +53,51 @@ class TrainDet(BaseRunner):
         """
         pre_save_dir = self.save_pred_fn_path + '/predicts'
         for final_collection in final_collections:
-            predictions = final_collection['predicts']
+            predictions = final_collection["predictions"]
             filename = final_collection['img_metas']['filename']
             filepath = os.path.join(pre_save_dir, 'val_' + filename)
-            predict = torch.softmax(predictions, dim=0)
-            predictions = predict.cpu().detach().numpy()
-            predict_labels = np.argmax(predictions, axis=0).astype(np.uint8)
-            if predictions.shape[0] == 2:
-                max_scores = predictions[1, ...]
-                predict_labels[max_scores >= self.min_score_threshold] = 1
-                predict_labels[max_scores < self.min_score_threshold] = 0
-            else:
-                pass
+            predictions = predictions.cpu().detach().numpy()
             mkdir_or_exist(osp.dirname(filepath))
-            img_file = final_collection['img_metas']['filename']
-            image_path = osp.join(self.data_root, 'images', img_file)
-            ori_img = cv2.imread(image_path, 0)
-            predict_labels = np.expand_dims(predict_labels, axis=-1)
-            predict_labels = cv2.resize(predict_labels, [ori_img.shape[0], ori_img.shape[1]],
-                                        interpolation=cv2.INTER_LINEAR)
-            merge_img = cv2.addWeighted(ori_img, 0.5, predict_labels * 255, 0.5, 0)
-            cv2.imwrite(filepath, merge_img)
+            image_path = osp.join(self.data_root, 'images', filename)
+            ori_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+            image_shape = final_collection['img_metas']["image_shape"]
+            cur_img = cv2.resize(ori_img, [image_shape[0], image_shape[1]], interpolation=cv2.INTER_LINEAR)
+            predict_bboxes = predictions[:, :8]
+            for predict_bbox in predict_bboxes:
+                bbox = np.array([predict_bbox], np.float32)
+                pts = np.array([bbox.reshape((4, 2))], dtype=np.int32)
+                cv2.drawContours(cur_img, pts, 0, color=(0, 255, 0), thickness=2)
+            cv2.imwrite(filepath, cur_img)
 
     def _generate_heat_map(self, final_collections):
         pre_save_dir = self.save_pred_fn_path + '/heatmaps'
         pass
 
     def _after_train(self):
-        self.logger.info('all train epoch is finished')
+        self.logger.info('all train epoch is finished, begin inference')
+        if self.ge_heat_map:
+            check_point = osp.join(self.save_pred_fn_path, 'checkpoints', 'model_best.pth')
+            save_heat_maps_path = osp.join(self.save_pred_fn_path, 'heatmap')
+            load_checkpoint(self.model, check_point, strict=True)
+            mkdir_or_exist(save_heat_maps_path)
+            self.model.train()
+            for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
+                                desc='begin inference'):
+                _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
+                _img = _img.cuda()
+                save_heat_map_path = osp.join(save_heat_maps_path, data['images_collect']['img_metas'][0]['filename'])
+                # Construct the CAM object once, and then re-use it on many images:
+                cam = ScoreCam(self.model)
+
+                # If target_category is None, the highest scoring category
+                # will be used for every image in the batch.
+                # target_category can also be an integer, or a list of different integers
+                # for every image in the batch.
+                score_map = cam(_img)
+                basic_visualize(_img.cpu(), score_map.type(torch.FloatTensor).cpu(), save_path=save_heat_map_path)
+        else:
+            pass
+
+
+
+
