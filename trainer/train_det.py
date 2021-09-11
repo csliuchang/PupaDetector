@@ -15,6 +15,9 @@ from visual.utils import basic_visualize
 
 @Trainer.register_module()
 class TrainDet(BaseRunner):
+    """
+    A simple Detection and Rotate Detection Trainer
+    """
     def __init__(self, *args, **kwargs):
         super(TrainDet, self).__init__(*args, **kwargs)
 
@@ -75,7 +78,7 @@ class TrainDet(BaseRunner):
 
     def _after_train(self):
         self.logger.info('all train epoch is finished, begin inference')
-        if self.ge_heat_map:
+        if self.ge_heat_map.enable:
             check_point = osp.join(self.save_pred_fn_path, 'checkpoints', 'model_best.pth')
             save_heat_maps_path = osp.join(self.save_pred_fn_path, 'heatmap')
             load_checkpoint(self.model, check_point, strict=True)

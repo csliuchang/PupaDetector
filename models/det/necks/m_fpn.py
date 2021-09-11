@@ -7,7 +7,7 @@ from models.builder import NECKS
 
 
 @NECKS.register_module()
-class FPN(nn.Module):
+class MFPN(nn.Module):
     """
     Feature Pyramid Network.
 
@@ -76,7 +76,7 @@ class FPN(nn.Module):
                  norm_cfg=None,
                  act_cfg=None,
                  upsample_cfg=dict(mode='nearest')):
-        super(FPN, self).__init__()
+        super(MFPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels

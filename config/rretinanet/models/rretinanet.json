@@ -13,6 +13,7 @@
             "act_cfg": "SiLU",
             "num_classes": null
         },
+
         "neck" : {
             "type": "FPN",
             "input_shapes": [64, 128, 256, 512],

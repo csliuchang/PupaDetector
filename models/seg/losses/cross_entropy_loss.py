@@ -224,9 +224,10 @@ class CrossEntropyLoss(nn.Module):
             class_weight=class_weight,
             reduction=reduction,
             avg_factor=avg_factor,
-            ignore_index=self.ignore_label)
+            **kwargs)
 
         return loss_cls
+
 
 
 class TopKLoss(CrossEntropyLoss):

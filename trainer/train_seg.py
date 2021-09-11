@@ -1,12 +1,8 @@
 import torch
-import copy
 from tools import BaseRunner
 from utils import save_checkpoint, mkdir_or_exist
-import time
 import numpy as np
 import os.path as osp
-from tqdm import tqdm
-from utils.metrics.rotate_metrics import combine_predicts_gt
 import cv2
 import os
 from utils.visual import get_cam_on_image
@@ -16,6 +12,9 @@ from .build import Trainer
 
 @Trainer.register_module()
 class TrainSeg(BaseRunner):
+    """
+    A simple segmentation trainer
+    """
     def __init__(self, *args, **kwargs):
         super(TrainSeg, self).__init__(*args, **kwargs)
 

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+import math
 import torch
 import torch.nn as nn
 from models.base import ConvModule
@@ -85,7 +85,7 @@ class OBBAnchorFreeHead(BaseDenseHead):
         # background_label should be either 0 or num_classes
         assert (self.background_label == 0
                 or self.background_label == num_classes)
-
+        self.prior_prob = 0.01
         self._init_layers()
 
     def _init_layers(self):
@@ -141,15 +141,17 @@ class OBBAnchorFreeHead(BaseDenseHead):
         self.conv_reg = nn.Conv2d(self.feat_channels, self.reg_dim, 3, padding=1)
 
     def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.conv_cls, std=0.01, bias=bias_cls)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, mean=0, std=0.01)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            if isinstance(m, (nn.GroupNorm, nn.BatchNorm2d, nn.SyncBatchNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+        # Use prior in model initialization to improve stability
+        bias_value = -math.log((1 - self.prior_prob) / self.prior_prob)
+        normal_init(self.conv_cls, std=0.01, bias=bias_value)
         normal_init(self.conv_reg, std=0.01)
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,

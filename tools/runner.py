@@ -3,7 +3,7 @@ import torch
 from datasets.builder import build_dataloader
 from engine.optimizer import build_optimizer
 from utils.metrics import RotateDetEval, SegEval
-from tqdm import tqdm
+from utils.bar import ProgressBar
 from utils.metrics.rotate_metrics import combine_predicts_gt
 import torch.nn as nn
 import numpy as np
@@ -145,8 +145,8 @@ class BaseRunner:
         final_collection = []
         total_frame = 0.0
         total_time = 0.0
-        for i, data in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader),
-                            desc='begin val mode'):
+        prog_bar = ProgressBar(len(self.val_dataloader))
+        for i, data in enumerate(self.val_dataloader):
             _img, _ground_truth = data['images_collect']['img'], data['ground_truth']
             _img = _img.cuda()
             for key, value in _ground_truth.items():
@@ -161,12 +161,14 @@ class BaseRunner:
             predict_gt_collection = combine_predicts_gt(predicts, data['images_collect']['img_metas'][0],
                                                         _ground_truth, self.network_type)
             final_collection.append(predict_gt_collection)
+            for _ in range(cur_batch):
+                prog_bar.update()
         if self.save_val_pred:
             self._save_val_prediction(final_collection)
         if self.ge_heat_map.enable:
             self._generate_heat_map(final_collection)
         metric = self.eval_method(final_collection)
-        self.logger.info('%2f FPS' % (total_frame / total_time))
+        print('\t %2f FPS' % (total_frame / total_time))
         return metric
 
     def _after_epoch(self, results):

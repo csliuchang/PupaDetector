@@ -134,7 +134,6 @@ class RRetinaHead(AnchorHead):
 
         return torch.cat([det_bboxes[None, :, :], det_labels[None, :, None] + 1], dim=2)
 
-
     def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg=None, **kwargs):
         num_levels = len(cls_scores)
         assert len(cls_scores) == len(bbox_preds)
@@ -163,9 +162,6 @@ class RRetinaHead(AnchorHead):
         final_results = padding_results(result_list, nms_pre, nums_tensor=7)
         final_results = torch.stack([rdets2points_tensor(final_result) for final_result in final_results], dim=0)
         return final_results
-
-    def loss_refine(self, ):
-        pass
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):

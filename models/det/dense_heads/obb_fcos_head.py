@@ -166,8 +166,9 @@ class OBBFCOSHead(OBBAnchorFreeHead):
              bbox_preds,
              theta_preds,
              centernesses,
-             gt_bboxes,
              gt_labels,
+             gt_bboxes,
+             gt_masks,
              img_metas,
              gt_bboxes_ignore=None):
         """Compute loss of the head.
@@ -233,11 +234,12 @@ class OBBFCOSHead(OBBAnchorFreeHead):
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         bg_class_ind = self.num_classes
-        pos_inds = ((flatten_labels >= 0)
-                    & (flatten_labels < bg_class_ind)).nonzero().reshape(-1)
+        pos_inds = torch.nonzero(((flatten_labels >= 0)
+                                  & (flatten_labels < bg_class_ind)), as_tuple=False).reshape(-1)
         num_pos = len(pos_inds)
+        flatten_labels = flatten_labels.reshape(-1, self.num_classes)
         loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
+            flatten_cls_scores, flatten_labels.float(),
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
@@ -249,15 +251,16 @@ class OBBFCOSHead(OBBAnchorFreeHead):
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2obb(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2obb(pos_points, pos_bbox_targets)
-            gt_bboxes = [mintheta_obb(bboxes) for bboxes in gt_bboxes]
             # centerness weighted iou loss
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
                 weight=pos_centerness_targets,
                 avg_factor=pos_centerness_targets.sum())
+            pos_centerness_targets = pos_centerness_targets.reshape(-1, self.num_classes)
+            pos_centerness = pos_centerness.reshape(-1, self.num_classes)
             loss_centerness = self.loss_centerness(pos_centerness,
-                                                   pos_centerness_targets)
+                                                   pos_centerness_targets.long())
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_centerness = pos_centerness.sum()
@@ -407,7 +410,7 @@ class OBBFCOSHead(OBBAnchorFreeHead):
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
-            score_factors=mlvl_centerness,)
+            score_factors=mlvl_centerness, )
         return torch.cat([det_bboxes[None, :, :], det_labels[None, :, None] + 1], dim=2)
 
     def _get_points_single(self,
@@ -555,8 +558,8 @@ class OBBFCOSHead(OBBAnchorFreeHead):
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
         inside_regress_range = (
-            (max_regress_distance >= regress_ranges[..., 0])
-            & (max_regress_distance <= regress_ranges[..., 1]))
+                (max_regress_distance >= regress_ranges[..., 0])
+                & (max_regress_distance <= regress_ranges[..., 1]))
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
@@ -564,6 +567,7 @@ class OBBFCOSHead(OBBAnchorFreeHead):
         areas[inside_regress_range == 0] = INF
         min_area, min_area_inds = areas.min(dim=1)
 
+        # TODO if bg label id = 0, then label id + 1
         labels = gt_labels[min_area_inds]
         labels[min_area == INF] = self.background_label  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
@@ -586,6 +590,6 @@ class OBBFCOSHead(OBBAnchorFreeHead):
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
         centerness_targets = (
-            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
-                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+                                     left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                                     top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)

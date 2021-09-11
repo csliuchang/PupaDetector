@@ -66,6 +66,11 @@ if __name__ == '__main__':
                     'src/rcuda/rnms_cuda.cpp', 'src/rcuda/rnms_kernel.cu'
                 ]),
             make_cuda_ext(
+                name='sigmoid_focal_loss_ext',
+                module='opts.sigmoid_focal_loss',
+                sources=['src/sigmoid_focal_loss_ext.cpp'],
+                sources_cuda=['src/cuda/sigmoid_focal_loss_cuda.cu']),
+            make_cuda_ext(
                 name='rbbox_geo_cuda',
                 module='opts.rbbox_geo',
                 sources=[],

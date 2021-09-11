@@ -120,7 +120,7 @@ def box_xyxy_to_cxcywh(x):
     return torch.stack(b, dim=-1)
 
 
-def  weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
+def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     """Apply element-wise weight and reduce loss.
 
     Parameters
