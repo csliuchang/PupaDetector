@@ -233,9 +233,8 @@ class OBBFCOSHead(OBBAnchorFreeHead):
             [flatten_bbox_preds, flatten_theta_preds], dim=1)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        bg_class_ind = self.num_classes
-        pos_inds = torch.nonzero(((flatten_labels >= 0)
-                                  & (flatten_labels < bg_class_ind)), as_tuple=False).reshape(-1)
+        bg_class_ind = 0
+        pos_inds = torch.nonzero((flatten_labels > 0), as_tuple=False).reshape(-1)
         num_pos = len(pos_inds)
         flatten_labels = flatten_labels.reshape(-1, self.num_classes)
         loss_cls = self.loss_cls(
@@ -568,7 +567,7 @@ class OBBFCOSHead(OBBAnchorFreeHead):
         min_area, min_area_inds = areas.min(dim=1)
 
         # TODO if bg label id = 0, then label id + 1
-        labels = gt_labels[min_area_inds]
+        labels = gt_labels[min_area_inds] + 1
         labels[min_area == INF] = self.background_label  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 

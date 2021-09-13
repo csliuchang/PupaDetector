@@ -9,7 +9,7 @@
         },
         "neck" : {
             "type": "MFPN",
-            "in_channels": [64, 64, 128, 256, 512],
+            "in_channels": [64, 128, 256, 512],
             "out_channels": 64,
             "start_level": 1,
             "add_extra_convs": true,
@@ -43,37 +43,24 @@
         }
     },
     "train_cfg": {
-        "assigner": {"type":"MaxIoUAssigner",
-                "pos_iou_thr": 0.5,
-                "neg_iou_thr": 0.4,
-                "min_pos_iou": 0,
-                "ignore_iof_thr": -1},
-                "iou_calculator": {"type":"RBboxOverlaps2D"},
-        "sampler_cfg": {"type":"PseudoSampler",
-                        "sampling": false
-        },
-        "allowed_border": -1,
         "pos_weight": -1,
-        "debug": false,
-        "stage_loss_weights": [1.0, 1.0],
-        "num_anchors": 27,
         "auto_anchors": false
 
     },
     "test_cfg": {
-        "nms_pre": 100,
-        "score_thr": 0.5,
-        "max_per_img": 100,
+        "nms_pre": 1000,
+        "score_thr": 0.4,
+        "max_per_img": 1000,
         "nms": {"type": "rnms",
-                     "iou_thr": 0.3
+                     "iou_thr": 0.1
                     },
         "merge_cfg": {
-             "nms_pre": 100,
-             "score_thr": 0.5,
+             "nms_pre": 1000,
+             "score_thr": 0.4,
              "nms": {"type": "rnms",
-                     "iou_thr": 0.3
+                     "iou_thr": 0.1
                     },
-            "max_per_img": 100
+            "max_per_img": 1000
             }
     }
 }
