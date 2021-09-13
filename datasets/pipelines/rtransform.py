@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from .transform import Resize, Rotate
 from ..builder import PIPELINES
 from engine.parallel import DataContainer as DC
 import torch
@@ -32,15 +32,14 @@ def normalize(img, mean=None, std=None):
 
 
 @PIPELINES.register_module()
-class RResize(object):
+class RResize(Resize):
     """
         Resize images & rotated bbox
         Inherit Resize pipeline class to handle rotated bboxes
     """
 
-    def __init__(self, img_scale):
-        self.scale = img_scale
-        self.resize_height, self.resize_width = self.scale
+    def __init__(self, *args, **kwargs):
+        super(RResize, self).__init__(*args, **kwargs)
 
     def _resize_img(self, results):
         image = results['img_info']
@@ -61,10 +60,23 @@ class RResize(object):
         new_bbox = np.array(new_bbox, dtype=np.float32)
         results['ann_info']['bboxes'] = new_bbox
 
-    def __call__(self, results):
-        self._resize_img(results)
-        self._resize_bboxes(results)
-        return results
+
+@PIPELINES.register_module()
+class RRotate(Rotate):
+    def __init__(self):
+        super(Rotate, self).__init__()
+
+
+
+
+
+    def _get_matrix(self):
+        M = cv2.getRotationMatrix2D((width, ))
+
+
+
+
+
 
 
 @PIPELINES.register_module()

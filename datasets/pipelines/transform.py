@@ -47,3 +47,12 @@ class Resize(object):
         self._resize_img(results)
         self._resize_bboxes(results)
         return results
+
+
+@PIPELINES.register_module()
+class Rotate(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        pass
