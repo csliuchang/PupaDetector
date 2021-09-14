@@ -52,6 +52,9 @@ class Resize(object):
 @PIPELINES.register_module()
 class Rotate(object):
     def __init__(self):
+        self.angle = self._get_angle(angle)
+
+    def _get_angle(self):
         pass
 
     def __call__(self, *args, **kwargs):
