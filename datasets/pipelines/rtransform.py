@@ -63,16 +63,15 @@ class RResize(Resize):
 
 @PIPELINES.register_module()
 class RRotate(Rotate):
+    """
+    RRotate pipeline for poly and bbox
+    """
     def __init__(self, *args, **kwargs):
         super(Rotate, self).__init__(*args, **kwargs)
 
-
     def _get_matrix(self):
+        width, height = self
         M = cv2.getRotationMatrix2D((width, height), self.angle, 1.0)
-
-
-
-
 
 
 

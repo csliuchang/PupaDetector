@@ -18,3 +18,4 @@ also the [rotatedetection](https://github.com/csliuchang/PupaDetector/blob/maste
 ### Reference
 + [detectron2](https://github.com/facebookresearch/detectron2)  
 + [mmdetection](https://github.com/open-mmlab/mmdetection)  
++ [OBBDetection](https://github.com/jbwang1997/OBBDetection) 
