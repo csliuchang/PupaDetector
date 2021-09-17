@@ -1,3 +1,5 @@
+## for easy to add hook, this repo will decard, please change to [cvalgorithms](https://github.com/csliuchang/cvalgorithms)
+
 ### PupaDetector is a detector use for segmentation rotate detection and detection.
 ##### start:
 `
