@@ -7,14 +7,14 @@
             "stage_channels": [64, 128, 256, 512, 1024],
             "depth_multiple": 0.33,
             "width_multiple": 0.50,
-            "out_levels": [1, 2, 3, 4, 5],
-            "strides": [2, 2, 2, 2],
+            "out_levels": [4],
+            "strides": [2, 2, 2, 1],
             "norm_cfg": "BN2d",
             "act_cfg": "SiLU",
             "num_classes": null
         },
         "bbox_head": {
-            "type": "RRetinaHead"
+            "type": "YOLOFeatureHead"
         }
     }
 }

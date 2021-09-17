@@ -13,46 +13,26 @@
             "act_cfg": "SiLU",
             "num_classes": null
         },
-
-        "neck" : {
-            "type": "FPN",
-            "input_shapes": [64, 128, 256, 512],
-            "out_channels": 64,
-            "in_features": "p7",
-            "top_block": null,
-            "strides": [16, 32, 64, 128]
-        },
         "bbox_head": {
-            "type": "RRetinaHead",
-            "num_classes": 1,
-            "in_channels": 64,
-            "stacked_convs": 4,
-            "feat_channels": 64,
-            "anchor_generator": {
-                "type":"RAnchorGenerator",
-                "octave_base_scale": 4,
-                "scales_per_octave": 3,
-                "ratios": [1.0, 0.5, 2.0, 1.0 ],
-                "angles": null,
-                "strides": [8, 16, 32]
-            },
-            "bbox_coder": {
-                "type":"DeltaXYWHABBoxCoder",
-                "target_means":[0.0, 0.0, 0.0, 0.0, 0.0],
-                "target_stds":[1.0, 1.0, 1.0, 1.0, 1.0]
-            },
-            "loss_cls": {
-                "type":"FocalLoss",
-                "use_sigmoid": true,
-                "gamma": 2.0,
-                "alpha": 0.25,
-                "loss_weight": 1.0
-            },
-            "loss_bbox": {
-                "type": "GWDLoss",
-                "loss_weight": 1.0
-            },
-            "num_refine_stages": 2
+            "type": "YOLOFHead",
+            "encoder": {
+                "in_channels": 208,
+                "num_channels": 128,
+                "block_mid_channels": 64,
+                "block_dilations": [2, 4, 6, 8],
+                "num_residual_blocks": 4
+                },
+            "decoder": {
+                "in_channels": 128,
+                "num_anchors": 3,
+                "block_mid_channels": 64,
+                "reg_num_convs": 4,
+                "cls_num_convs": 2,
+                "prior_prob": 0.01
+                },
+            "act_type": "ReLU",
+            "norm_type": "BN",
+            "num_classes": 1
         }
     },
     "train_cfg": {

@@ -51,11 +51,27 @@ class Resize(object):
 
 @PIPELINES.register_module()
 class Rotate(object):
-    def __init__(self):
+    def __init__(self, angle):
         self.angle = self._get_angle(angle)
 
-    def _get_angle(self):
-        pass
+    def _get_angle(self, angle):
+        angle = np.random.randint(-angle, angle)
+        return angle
 
-    def __call__(self, *args, **kwargs):
-        pass
+    def _get_matrix(self, image):
+        width, height = image.shape[1], image.shape[0]
+        M = cv2.getRotationMatrix2D((width, height), self.angle, 1.0)
+        return M
+
+    def _rotate_image(self, image, M):
+        height, width, channel = image.shape[0], image.shape[1], image.shape[2]
+        for c in range(channel):
+            image[:, :, c] = cv2.warpAffine(image[:, :, c], M, (height, width),
+                                            flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REFLECT)
+
+    def __call__(self, results, *args, **kwargs):
+        image = results["img_info"]
+        M = self._get_matrix(image)
+        self._rotate_image(image, M)
+        self._rotate_annotation(results, M)
+        return results

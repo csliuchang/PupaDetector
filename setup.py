@@ -39,7 +39,7 @@ def make_cuda_ext(name, module, sources, sources_cuda=[]):
 
 if __name__ == '__main__':
     setup(
-        name='deepsightaidet',
+        name='pupadetector',
         description='DeepSight Detection Toolbox and Benchmark',
         author='deepsightAI',
         author_email='@deepsight.com',

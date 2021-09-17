@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Scale, normal_init
 from models.builder import HEADS, build_loss
+from models.base import Scale
+from ...utils import normal_init
 from .obb_anchor_free_head import OBBAnchorFreeHead
 from models.utils import distance2obb, mintheta_obb, multi_apply, multiclass_rnms, padding_results, rdets2points_tensor
 

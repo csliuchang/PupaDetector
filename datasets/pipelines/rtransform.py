@@ -67,12 +67,23 @@ class RRotate(Rotate):
     RRotate pipeline for poly and bbox
     """
     def __init__(self, *args, **kwargs):
-        super(Rotate, self).__init__(*args, **kwargs)
+        super(RRotate, self).__init__(*args, **kwargs)
 
-    def _get_matrix(self):
-        width, height = self
-        M = cv2.getRotationMatrix2D((width, height), self.angle, 1.0)
+    def _rotate_annotation(self, results, M):
 
+        height, width = results["image_shape"][1], results["image_shape"][0]
+        rotate_bbox = []
+        bboxes = results["ann_info"]["bboxes"]
+        for pts in bboxes:
+            pts = pts.reshape(4, 2)
+            pts = np.concatenate(
+                [pts, np.ones((pts.shape[0], 1))], axis=1)
+            pts = np.matmul(pts, np.transpose(M)).reshape(-1)
+            # clip pts
+            pts = np.array([np.clip(pts[i], 0, height) if i in [1, 3, 5, 7]
+                    else np.clip(pts[i], 0, width) for i in range(len(pts))], dtype=np.float32)
+            rotate_bbox.append(pts)
+        results["ann_info"]["bboxes"] = np.concatenate([rotate_bbox], axis=0)
 
 
 @PIPELINES.register_module()
